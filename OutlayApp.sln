@@ -1,6 +1,12 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OutlayApp.Web", "OutlayApp.Web\OutlayApp.Web.csproj", "{B5C4C34D-2811-4FF2-84FF-CCCFCA7CAC2C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OutlayApp.API", "OutlayApp.API\OutlayApp.API.csproj", "{B5C4C34D-2811-4FF2-84FF-CCCFCA7CAC2C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OutlayApp.Infrastructure", "OutlayApp.Infrastructure\OutlayApp.Infrastructure.csproj", "{FCD70B05-25CE-4A3D-A417-BC3D207B3779}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OutlayApp.Application", "OutlayApp.Application\OutlayApp.Application.csproj", "{D009A74E-2679-475C-B667-DAE0D9F32B4A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OutlayApp.Domain", "OutlayApp.Domain\OutlayApp.Domain.csproj", "{7EE540C1-257D-4452-BEE3-5162C2EDCC93}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -12,5 +18,17 @@ Global
 		{B5C4C34D-2811-4FF2-84FF-CCCFCA7CAC2C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B5C4C34D-2811-4FF2-84FF-CCCFCA7CAC2C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B5C4C34D-2811-4FF2-84FF-CCCFCA7CAC2C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FCD70B05-25CE-4A3D-A417-BC3D207B3779}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FCD70B05-25CE-4A3D-A417-BC3D207B3779}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FCD70B05-25CE-4A3D-A417-BC3D207B3779}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FCD70B05-25CE-4A3D-A417-BC3D207B3779}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D009A74E-2679-475C-B667-DAE0D9F32B4A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D009A74E-2679-475C-B667-DAE0D9F32B4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D009A74E-2679-475C-B667-DAE0D9F32B4A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D009A74E-2679-475C-B667-DAE0D9F32B4A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7EE540C1-257D-4452-BEE3-5162C2EDCC93}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7EE540C1-257D-4452-BEE3-5162C2EDCC93}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7EE540C1-257D-4452-BEE3-5162C2EDCC93}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7EE540C1-257D-4452-BEE3-5162C2EDCC93}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
