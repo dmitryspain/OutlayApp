@@ -1,6 +1,6 @@
 using MediatR;
 
-namespace OutlayApp.Application.Clients.GetCardHistoryByDescription;
+namespace OutlayApp.Application.Clients.Queries.GetCardHistoryByDescription;
 
 public class GetCardHistoryByDescriptionQuery : IRequest<List<TransactionByDescriptionDto>>
 {

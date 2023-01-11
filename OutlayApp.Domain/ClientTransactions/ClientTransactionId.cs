@@ -1,4 +1,4 @@
-namespace OutlayApp.Domain.Clients.Transactions;
+namespace OutlayApp.Domain.ClientTransactions;
 
 // public class ClientTransactionId : TypedIdValueBase
 // {

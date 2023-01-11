@@ -1,5 +1,5 @@
-using OutlayApp.Domain.Clients.Cards;
-using OutlayApp.Domain.Clients.Transactions;
+using OutlayApp.Domain.ClientCards;
+using OutlayApp.Domain.ClientTransactions;
 using OutlayApp.Domain.SeedWork;
 using OutlayApp.Domain.Shared;
 
@@ -47,6 +47,7 @@ public sealed class Client : Entity, IAggregateRoot
             externalCardId, creditLimit, currencyCode);
         
         _cards.Add(card);
+        // AddDomainEvent(new CardsHasBeedAddedEvent(Id));
         return card;
     }
 

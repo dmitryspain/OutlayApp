@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using OutlayApp.Domain.Clients.Transactions;
+using OutlayApp.Domain.ClientTransactions;
 
 namespace OutlayApp.Infrastructure.Database.EntityConfigurations;
 

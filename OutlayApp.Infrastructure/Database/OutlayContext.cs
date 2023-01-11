@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using OutlayApp.Domain.ClientCards;
 using OutlayApp.Domain.Clients;
-using OutlayApp.Domain.Clients.Cards;
-using OutlayApp.Domain.Clients.Transactions;
+using OutlayApp.Domain.ClientTransactions;
 
 namespace OutlayApp.Infrastructure.Database;
 

@@ -1,7 +1,8 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OutlayApp.Application.Clients.Command;
-using OutlayApp.Application.Transactions.Commands;
+using OutlayApp.Application.Clients.Commands;
+using OutlayApp.Application.ClientTransactions.Commands;
 
 namespace OutlayApp.API.Controllers;
 
@@ -17,9 +18,10 @@ public class ClientsController : ControllerBase
     }
 
     [HttpGet("latest-transactions")]
-    public async Task<IActionResult> FetchLatestTransactions(string cardId, CancellationToken cancellationToken)
+    public async Task<IActionResult> FetchLatestTransactions(Guid clientId, Guid clientCardId, CancellationToken cancellationToken)
     {
-        var command = new FetchLatestTransactionsCommand(cardId);
+        //todo find user
+        var command = new FetchLatestTransactionsCommand(clientId, clientCardId);
         var result = await _sender.Send(command, cancellationToken);
         return result.IsSuccess ? Ok() : BadRequest(result.Error);
     }

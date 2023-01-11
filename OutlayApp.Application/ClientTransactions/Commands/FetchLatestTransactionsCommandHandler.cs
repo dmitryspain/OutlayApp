@@ -2,11 +2,12 @@ using System.Net.Http.Json;
 using AutoMapper;
 using OutlayApp.Application.Abstractions.Messaging;
 using OutlayApp.Application.Configuration.Monobank;
-using OutlayApp.Domain.Clients.Transactions;
+using OutlayApp.Application.Transactions;
+using OutlayApp.Domain.ClientTransactions;
 using OutlayApp.Domain.Repositories;
 using OutlayApp.Domain.Shared;
 
-namespace OutlayApp.Application.Transactions.Commands;
+namespace OutlayApp.Application.ClientTransactions.Commands;
 
 public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatestTransactionsCommand>
 {
@@ -28,7 +29,7 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
 
     public async Task<Result> Handle(FetchLatestTransactionsCommand request, CancellationToken cancellationToken)
     {
-        var latest = await _transactionRepository.GetLatest(cancellationToken);
+        var latest = await _transactionRepository.GetLatest(request.ClientId, cancellationToken);
         long unixTimeFrom;
         if (latest is not null)
         {
@@ -42,7 +43,7 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
         }
 
         var unixTimeTo = DateTimeOffset.Now.ToUnixTimeSeconds();
-        var url = $"/personal/statement/{request.CardId}/{unixTimeFrom}/{unixTimeTo}";
+        var url = $"/personal/statement/{request.ClientCardId}/{unixTimeFrom}/{unixTimeTo}";
         var result = await _httpClient.GetAsync(url, cancellationToken);
         var cardHistory = (await result.Content.ReadFromJsonAsync<IEnumerable<MonobankTransaction>>(cancellationToken:
             cancellationToken) ?? Array.Empty<MonobankTransaction>()).ToList();

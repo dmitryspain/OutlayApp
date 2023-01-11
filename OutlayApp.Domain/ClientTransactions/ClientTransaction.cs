@@ -1,6 +1,6 @@
 using OutlayApp.Domain.SeedWork;
 
-namespace OutlayApp.Domain.Clients.Transactions;
+namespace OutlayApp.Domain.ClientTransactions;
 
 public class ClientTransaction : Entity, IAggregateRoot
 {

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using OutlayApp.Domain.Clients.Cards;
+using OutlayApp.Domain.ClientCards;
 
 namespace OutlayApp.Infrastructure.Database.EntityConfigurations;
 

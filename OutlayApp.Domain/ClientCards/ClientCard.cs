@@ -1,6 +1,6 @@
 using OutlayApp.Domain.SeedWork;
 
-namespace OutlayApp.Domain.Clients.Cards;
+namespace OutlayApp.Domain.ClientCards;
 
 public class ClientCard : Entity, IAggregateRoot
 {

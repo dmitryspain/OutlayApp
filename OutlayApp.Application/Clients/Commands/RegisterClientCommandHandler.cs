@@ -1,13 +1,12 @@
 using System.Net.Http.Json;
 using OutlayApp.Application.Abstractions.Messaging;
 using OutlayApp.Application.Configuration.Monobank;
-using OutlayApp.Application.Transactions.Commands;
 using OutlayApp.Domain.Clients;
 using OutlayApp.Domain.Repositories;
 using OutlayApp.Domain.Shared;
 using OutlayApp.Infrastructure.Models;
 
-namespace OutlayApp.Application.Clients.Command;
+namespace OutlayApp.Application.Clients.Commands;
 
 public class RegisterClientCommandHandler : ICommandHandler<RegisterClientCommand>
 {

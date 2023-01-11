@@ -4,7 +4,7 @@ using MediatR;
 using OutlayApp.Application.Configuration.Monobank;
 using OutlayApp.Infrastructure.Models;
 
-namespace OutlayApp.Application.Clients.GetClientInfo;
+namespace OutlayApp.Application.Clients.Queries.GetClientInfo;
 
 public class GetClientsQueryHandler : IRequestHandler<GetClientsQuery, ClientInfoDto>
 {

@@ -25,7 +25,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Folder Include="ClientCards\Commands" />
       <Folder Include="Clients\Queries" />
+      <Folder Include="ClientTransactions" />
     </ItemGroup>
 
 

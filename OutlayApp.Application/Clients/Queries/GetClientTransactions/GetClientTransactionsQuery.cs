@@ -1,7 +1,7 @@
 using MediatR;
 using OutlayApp.Application.Transactions;
 
-namespace OutlayApp.Application.Clients.GetClientTransactions;
+namespace OutlayApp.Application.Clients.Queries.GetClientTransactions;
 
 public class GetClientTransactionsQuery : IRequest<List<MonobankTransaction>>
 {

@@ -1,4 +1,4 @@
-namespace OutlayApp.Domain.Clients.Cards;
+namespace OutlayApp.Domain.ClientCards;
 
 // public class CardId : TypedIdValueBase
 // {
