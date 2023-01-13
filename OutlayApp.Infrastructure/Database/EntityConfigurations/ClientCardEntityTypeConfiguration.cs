@@ -20,5 +20,6 @@ internal sealed class ClientCardEntityTypeConfiguration : IEntityTypeConfigurati
     public void Configure(EntityTypeBuilder<ClientCard> builder)
     {
         builder.HasKey(x => x.Id);
+        // builder.HasOne(x=>x.ClientId)
     }
 }

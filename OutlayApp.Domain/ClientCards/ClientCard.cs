@@ -1,21 +1,22 @@
+using OutlayApp.Domain.ClientTransactions;
 using OutlayApp.Domain.SeedWork;
+using OutlayApp.Domain.Shared;
 
 namespace OutlayApp.Domain.ClientCards;
 
 public class ClientCard : Entity, IAggregateRoot
 {
     public Guid ClientId { get; private set; }
-    // public CardId CardId { get; set; }
-    // public ClientId ClientId { get; private set; }
-
     public decimal Balance { get; private set; }
-    public string Type { get; private set; }
+    public string Type { get;  private set; } 
     public int CreditLimit { get; private set; }
     public int CurrencyCode { get; private set; }
     public string ExternalCardId { get; private set; }
+    
+    private readonly List<ClientTransaction> _transactions = new();
+    public IReadOnlyCollection<ClientTransaction> Transactions => _transactions;
 
-    private ClientCard()
-        : base(Guid.NewGuid())
+    private ClientCard() : base(Guid.NewGuid())
     {
     }
 
@@ -29,5 +30,13 @@ public class ClientCard : Entity, IAggregateRoot
         ExternalCardId = externalCardId;
         CreditLimit = creditLimit;
         CurrencyCode = currencyCode;
+    }
+    
+    public Result<ClientTransaction> AddTransaction(string description,
+        decimal amount, decimal balanceAfter, long dateOccured)
+    {
+        var transaction = ClientTransaction.Create(Id, description, amount, balanceAfter, dateOccured);
+       _transactions.Add(transaction);
+        return transaction;
     }
 }

@@ -1,38 +1,38 @@
 using System.Net.Http.Json;
-using MediatR;
+using AutoMapper;
+using OutlayApp.Application.Abstractions.Messaging;
 using OutlayApp.Application.Configuration.Monobank;
 using OutlayApp.Application.Transactions;
+using OutlayApp.Domain.Repositories;
+using OutlayApp.Domain.Shared;
 
 namespace OutlayApp.Application.Clients.Queries.GetClientTransactions;
 
-public class GetClientTransactionsQueryHandler : IRequestHandler<GetClientTransactionsQuery, List<MonobankTransaction>>
+public class GetClientTransactionsQueryHandler : IQueryHandler<GetClientTransactionsQuery, List<ClientTransactionDto>>
 {
-    private readonly HttpClient _httpClient;
+    private readonly IClientTransactionRepository _clientTransactionRepository;
+    private readonly IMapper _mapper;
     private const int MaxDaysPeriod = 30;
 
-    public GetClientTransactionsQueryHandler(IHttpClientFactory factory)
+    public GetClientTransactionsQueryHandler(IClientTransactionRepository clientTransactionRepository, IMapper mapper)
     {
-        _httpClient = factory.CreateClient(MonobankConstants.HttpClient);
+        _clientTransactionRepository = clientTransactionRepository;
+        _mapper = mapper;
     }
 
-    public async Task<List<MonobankTransaction>> Handle(GetClientTransactionsQuery request, CancellationToken cancellationToken)
+    public async Task<Result<List<ClientTransactionDto>>> Handle(GetClientTransactionsQuery request,
+        CancellationToken cancellationToken)
     {
-        var from = DateTime.Now.AddDays(-MaxDaysPeriod);
-        var to = DateTime.Now;
+        var dateFrom = DateTimeOffset.Now.AddDays(-MaxDaysPeriod).ToUnixTimeSeconds();
+        var dateTo = DateTimeOffset.Now.ToUnixTimeSeconds();
 
         if (request.DateFrom.HasValue)
-            from = request.DateFrom.Value;
+            dateFrom = request.DateFrom.Value;
 
         if (request.DateTo.HasValue)
-            to = request.DateTo.Value;
+            dateTo = request.DateTo.Value;
 
-        var unixTimeFrom = ((DateTimeOffset)from).ToUnixTimeSeconds();
-        var unixTimeTo = ((DateTimeOffset)to).ToUnixTimeSeconds();
-
-        var url = $"/personal/statement/{request.CardId}/{unixTimeFrom}/{unixTimeTo}";
-        var result = await _httpClient.GetAsync(url, cancellationToken);
-        var cardHistories = (await result.Content.ReadFromJsonAsync<IEnumerable<MonobankTransaction>>(cancellationToken:
-            cancellationToken) ?? Array.Empty<MonobankTransaction>()).ToList();
-        return cardHistories;
+        var transactions = await _clientTransactionRepository.GetByPeriod(request.ClientCardId, dateFrom, dateTo, cancellationToken);
+        return _mapper.Map<List<ClientTransactionDto>>(transactions);
     }
 }

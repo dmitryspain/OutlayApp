@@ -1,7 +1,8 @@
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OutlayApp.Application.Clients.Commands;
+using OutlayApp.Application.Clients.Queries.GetClientInfo;
+using OutlayApp.Application.Clients.Queries.GetClientTransactions;
 using OutlayApp.Application.ClientTransactions.Commands;
 
 namespace OutlayApp.API.Controllers;
@@ -18,14 +19,13 @@ public class ClientsController : ControllerBase
     }
 
     [HttpGet("latest-transactions")]
-    public async Task<IActionResult> FetchLatestTransactions(Guid clientId, Guid clientCardId, CancellationToken cancellationToken)
+    public async Task<IActionResult> FetchLatestTransactions(Guid clientId, string externalCardId, CancellationToken cancellationToken)
     {
-        //todo find user
-        var command = new FetchLatestTransactionsCommand(clientId, clientCardId);
+        var command = new FetchLatestTransactionsCommand(clientId, externalCardId);
         var result = await _sender.Send(command, cancellationToken);
         return result.IsSuccess ? Ok() : BadRequest(result.Error);
     }
-    
+
     [HttpPost("register-client")]
     public async Task<IActionResult> RegisterClient(string clientToken, CancellationToken cancellationToken)
     {
@@ -34,21 +34,23 @@ public class ClientsController : ControllerBase
         return result.IsSuccess ? Ok() : BadRequest(result.Error);
     }
 
-    
-    // public OutlayController(ICardService cardService, IDistributedCache cache)
-    // {
-    //     _cardService = cardService;
-    //     _cache = cache;
-    // }
+    [HttpGet("transactions-by-period")]
+    public async Task<IActionResult> TransactionsByPeriod(Guid clientCardId, long? dateFrom, long? dateTo,
+        CancellationToken cancellationToken)
+    {
+        var command = new GetClientTransactionsQuery(clientCardId, dateFrom, dateTo);
+        var result = await _sender.Send(command, cancellationToken);
+        return result.IsSuccess ? Ok(result) : BadRequest(result.Error);
+    }
 
-    // [HttpGet("client-info")]
-    // public async Task<ActionResult<ClientInfo>> GetClientInfo(CancellationToken cancellationToken)
-    // {
-    //     var clientInfo = await _cardService.GetClientInfo(cancellationToken);
-    //     clientInfo.CardInfos = clientInfo.CardInfos.Where(x => x.Balance > 0); 
-    //     return Ok(clientInfo);
-    // }
-    
+    [HttpGet("client-info")]
+    public async Task<IActionResult> GetClientInfo(Guid clientId, CancellationToken cancellationToken)
+    {
+        var command = new GetClientQuery(clientId);
+        var result = await _sender.Send(command, cancellationToken);
+        return result.IsSuccess ? Ok(result) : BadRequest(result.Error);
+    }
+
     //
     // [HttpGet("card-history")]
     // public async Task<ActionResult<IEnumerable<Transaction>>> GetCardHistory(string cardId,

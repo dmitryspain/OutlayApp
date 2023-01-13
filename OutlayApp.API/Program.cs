@@ -4,6 +4,7 @@ using OutlayApp.Application.Configuration.Extensions;
 using OutlayApp.Application.Configuration.Monobank;
 using OutlayApp.Domain.Repositories;
 using OutlayApp.Infrastructure.Database;
+using OutlayApp.Infrastructure.Processing;
 using OutlayApp.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,8 +31,10 @@ builder.Services.Configure<BrandFetchSettings>(x => builder.Configuration.GetSec
 // builder.Services.AddScoped<IBrandFetchService, BrandFetchService>();
 // builder.Services.AddScoped<ICardService, CardService>();
 builder.Services.AddScoped<IClientTransactionRepository, ClientTransactionRepository>();
+builder.Services.AddScoped<IClientCardsRepository, ClientCardsRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IDomainEventsDispatcher, DomainEventsDispatcher>();
 
 var app = builder.Build();
 if (app.Environment.IsDevelopment())

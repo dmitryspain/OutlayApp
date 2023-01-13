@@ -7,7 +7,7 @@ public static class AutoMapperExtensions
 {
     public static IServiceCollection AddAutoMapper(this IServiceCollection services)
     {
-        services.AddAutoMapper(typeof(TransactionProfile).Assembly);
+        services.AddAutoMapper(AssemblyReference.Assembly);
         return services;
     }
 }

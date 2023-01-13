@@ -20,6 +20,6 @@ internal sealed class CardsHasBeenAddedDomainEventHandler : INotificationHandler
     {
         var cards = await _clientCardsRepository.GetAll(notification.ClientId, cancellationToken);
         foreach (var card in cards)
-            await _sender.Send(new FetchLatestTransactionsCommand(notification.ClientId, card.Id), cancellationToken);
+            await _sender.Send(new FetchLatestTransactionsCommand(notification.ClientId, card.ExternalCardId), cancellationToken);
     }
 }

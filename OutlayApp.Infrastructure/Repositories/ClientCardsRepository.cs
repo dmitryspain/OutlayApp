@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using OutlayApp.Domain.ClientCards;
-using OutlayApp.Domain.Clients;
 using OutlayApp.Domain.Repositories;
 using OutlayApp.Infrastructure.Database;
 
@@ -23,5 +22,15 @@ public class ClientCardsRepository : IClientCardsRepository
     public Task<List<ClientCard>> GetAll(Guid clientId, CancellationToken cancellationToken = default)
     {
         return _context.ClientCards.Where(x => x.ClientId == clientId).ToListAsync(cancellationToken);
+    }
+
+    public Task<ClientCard> GetByExternalId(string externalId, CancellationToken cancellationToken = default)
+    {
+        return _context.ClientCards.FirstOrDefaultAsync(x => x.ExternalCardId == externalId, cancellationToken)!;
+    }
+
+    public Task<ClientCard> GetById(Guid clientCardId, CancellationToken cancellationToken = default)
+    {
+        return _context.ClientCards.FirstOrDefaultAsync(x => x.Id == clientCardId, cancellationToken)!;
     }
 }

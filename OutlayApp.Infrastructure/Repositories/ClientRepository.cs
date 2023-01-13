@@ -19,8 +19,23 @@ public class ClientRepository : IClientRepository
         return _context.AddAsync(client, cancellationToken).AsTask();
     }
 
-    public Task<Client?> GetByPersonalToken(string token, CancellationToken cancellationToken = default)
+    public void Update(Client client, CancellationToken cancellationToken = default)
     {
-        return _context.Clients.FirstOrDefaultAsync(x => x.PersonalToken == token, cancellationToken);
+        _context.Update(client);
+    }
+
+    public Task<Client> GetByPersonalToken(string token, CancellationToken cancellationToken = default)
+    {
+        return _context.Clients.FirstOrDefaultAsync(x => x.PersonalToken == token, cancellationToken)!;
+    }
+
+    public Task<Client> GetById(Guid clientId, CancellationToken cancellationToken = default)
+    {
+        return _context.Clients.FirstOrDefaultAsync(x => x.Id == clientId, cancellationToken)!;
+    }
+
+    public Task<Client> GetByIdWithCards(Guid clientId, CancellationToken cancellationToken = default)
+    {
+        return _context.Clients.Include(x => x.Cards).FirstOrDefaultAsync(x => x.Id == clientId, cancellationToken)!;
     }
 }
