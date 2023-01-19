@@ -1,4 +1,4 @@
-using OutlayApp.Domain.SeedWork;
+using OutlayApp.Domain.Primitives;
 
 namespace OutlayApp.Domain.Repositories;
 

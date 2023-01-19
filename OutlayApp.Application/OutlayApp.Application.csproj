@@ -21,13 +21,11 @@
 
     <ItemGroup>
       <ProjectReference Include="..\OutlayApp.Domain\OutlayApp.Domain.csproj" />
-      <ProjectReference Include="..\OutlayApp.Infrastructure\OutlayApp.Infrastructure.csproj" />
     </ItemGroup>
 
     <ItemGroup>
       <Folder Include="Clients\Queries" />
       <Folder Include="Clients\Queries\GetCardHistoryByDescription" />
-      <Folder Include="ClientTransactions" />
     </ItemGroup>
 
 

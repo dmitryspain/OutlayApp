@@ -4,7 +4,6 @@ using OutlayApp.Application.Configuration.Monobank;
 using OutlayApp.Domain.Clients;
 using OutlayApp.Domain.Repositories;
 using OutlayApp.Domain.Shared;
-using OutlayApp.Infrastructure.Models;
 
 namespace OutlayApp.Application.Clients.Commands;
 

@@ -1,6 +1,6 @@
 using OutlayApp.Domain.ClientCards;
 using OutlayApp.Domain.Clients.Events;
-using OutlayApp.Domain.SeedWork;
+using OutlayApp.Domain.Primitives;
 using OutlayApp.Domain.Shared;
 
 namespace OutlayApp.Domain.Clients;
@@ -35,7 +35,7 @@ public sealed class Client : Entity, IAggregateRoot
             externalCardId, creditLimit, currencyCode);
         
         _cards.Add(card);
-        AddDomainEvent(new CardsHasBeenAddedEvent(Id));
+        AddDomainEvent(new CardsHasBeenAddedEvent(card.Id));
         return card;
     }
 

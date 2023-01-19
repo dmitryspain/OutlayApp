@@ -23,6 +23,14 @@ public class ClientTransactionRepository : IClientTransactionRepository
             .ToListAsync(cancellationToken);
     }
 
+    public Task<List<ClientTransaction>> GetByDescription(Guid clientCardId, string description,
+        CancellationToken cancellationToken = default)
+    {
+        return _context.ClientTransactions.Where(x => x.Description == description)
+            .OrderByDescending(x => x.DateOccured)
+            .ToListAsync(cancellationToken);
+    }
+
     public Task<ClientTransaction> GetLatest(Guid clientCardId, CancellationToken cancellationToken = default)
     {
         return _context.ClientTransactions.Where(x => x.ClientCardId == clientCardId)

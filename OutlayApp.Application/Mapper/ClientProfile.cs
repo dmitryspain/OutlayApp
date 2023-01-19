@@ -1,6 +1,6 @@
 using AutoMapper;
 using OutlayApp.Application.Clients.Queries.GetClientInfo;
-using OutlayApp.Application.Clients.Queries.GetClientTransactions;
+using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactions;
 using OutlayApp.Domain.ClientCards;
 using OutlayApp.Domain.Clients;
 using OutlayApp.Domain.ClientTransactions;

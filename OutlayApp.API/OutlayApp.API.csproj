@@ -26,4 +26,9 @@
       <ProjectReference Include="..\OutlayApp.Application\OutlayApp.Application.csproj" />
       <ProjectReference Include="..\OutlayApp.Infrastructure\OutlayApp.Infrastructure.csproj" />
     </ItemGroup>
+
+
+    <ItemGroup>
+      <Folder Include="ClientCards" />
+    </ItemGroup>
 </Project>

@@ -1,5 +1,5 @@
 using Newtonsoft.Json;
-using OutlayApp.Domain.SeedWork;
+using OutlayApp.Domain.Primitives;
 using OutlayApp.Infrastructure.Database;
 using OutlayApp.Infrastructure.Processing.Outbox;
 
@@ -23,7 +23,7 @@ public class DomainEventsDispatcher : IDomainEventsDispatcher
             .Select(domainEvent => new OutboxMessage
             {
                 Id = Guid.NewGuid(),
-                OccurredOnUtc = DateTime.UtcNow,
+                OccurredOnUtc = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                 Type = domainEvent.GetType().Name,
                 Content = JsonConvert.SerializeObject(domainEvent,
                     new JsonSerializerSettings

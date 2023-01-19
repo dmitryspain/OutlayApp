@@ -1,5 +1,5 @@
 using OutlayApp.Domain.ClientTransactions;
-using OutlayApp.Domain.SeedWork;
+using OutlayApp.Domain.Primitives;
 using OutlayApp.Domain.Shared;
 
 namespace OutlayApp.Domain.ClientCards;
@@ -33,9 +33,9 @@ public class ClientCard : Entity, IAggregateRoot
     }
     
     public Result<ClientTransaction> AddTransaction(string description,
-        decimal amount, decimal balanceAfter, long dateOccured)
+        decimal amount, decimal balanceAfter, long dateOccured, int mcc)
     {
-        var transaction = ClientTransaction.Create(Id, description, amount, balanceAfter, dateOccured);
+        var transaction = ClientTransaction.Create(Id, description, amount, balanceAfter, dateOccured, mcc);
        _transactions.Add(transaction);
         return transaction;
     }

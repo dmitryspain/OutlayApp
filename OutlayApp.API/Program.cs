@@ -1,11 +1,13 @@
-using MediatR;
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
 using OutlayApp.Application.Configuration.BrandFetch;
+using OutlayApp.Application.Configuration.Database;
 using OutlayApp.Application.Configuration.Extensions;
 using OutlayApp.Application.Configuration.Monobank;
-using OutlayApp.Domain.Repositories;
+using OutlayApp.Infrastructure.BackgroundJobs;
 using OutlayApp.Infrastructure.Database;
 using OutlayApp.Infrastructure.Processing;
-using OutlayApp.Infrastructure.Repositories;
+using OutlayApp.Infrastructure.Mapper;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,18 +25,19 @@ builder.Services.AddControllers().Services
     .AddInMemoryDbContext()
     .AddDbContext(builder.Configuration)
     .AddRedis(builder.Configuration)
-    .AddMediatR(OutlayApp.Application.AssemblyReference.Assembly)
+    .AddBackgroundJobs()
     .AddAutoMapper();
 
 builder.Services.Configure<MonobankSettings>(x => builder.Configuration.GetSection(MonobankConstants.Name).Bind(x));
 builder.Services.Configure<BrandFetchSettings>(x => builder.Configuration.GetSection(BrandFetchConstants.Token).Bind(x));
-// builder.Services.AddScoped<IBrandFetchService, BrandFetchService>();
-// builder.Services.AddScoped<ICardService, CardService>();
-builder.Services.AddScoped<IClientTransactionRepository, ClientTransactionRepository>();
-builder.Services.AddScoped<IClientCardsRepository, ClientCardsRepository>();
-builder.Services.AddScoped<IClientRepository, ClientRepository>();
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-builder.Services.AddScoped<IDomainEventsDispatcher, DomainEventsDispatcher>();
+builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory())
+    .ConfigureContainer<ContainerBuilder>(containerBuilder =>
+    {
+        containerBuilder.RegisterModule<ServicesModule>();
+        containerBuilder.RegisterModule<MediatorModule>();
+        containerBuilder.RegisterModule<ProcessingModule>();
+        containerBuilder.RegisterModule(new DataAccessModule(builder.Configuration[DbConnectionConstants.ConnectionString]!));
+    });
 
 var app = builder.Build();
 if (app.Environment.IsDevelopment())

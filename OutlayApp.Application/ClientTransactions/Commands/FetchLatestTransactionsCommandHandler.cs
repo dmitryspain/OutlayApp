@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using OutlayApp.Application.Abstractions.Messaging;
+using OutlayApp.Application.Configuration.Extensions;
 using OutlayApp.Application.Configuration.Monobank;
 using OutlayApp.Application.Transactions;
 using OutlayApp.Domain.Repositories;
@@ -32,23 +33,25 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
                 $"No client card with External Id {request.ExternalCardId}"));
 
         long unixTimeFrom;
-        var latest = await _transactionRepository.GetLatest(clientCard.Id, cancellationToken); 
+        var latest = await _transactionRepository.GetLatest(clientCard.Id, cancellationToken);
         if (latest is null)
             unixTimeFrom = DateTimeOffset.Now.AddDays(-MaxDaysPeriod).ToUnixTimeSeconds();
         else
             unixTimeFrom = DateTimeOffset.Now - DateTimeOffset.FromUnixTimeSeconds(latest.DateOccured)
-                         < TimeSpan.FromDays(MaxDaysPeriod)
+                           < TimeSpan.FromDays(MaxDaysPeriod)
                 ? latest.DateOccured + 1 // because we dont want to take the existing record from monobank api
                 : DateTimeOffset.Now.AddDays(-MaxDaysPeriod).ToUnixTimeSeconds();
 
         var unixTimeTo = DateTimeOffset.Now.ToUnixTimeSeconds();
         var url = BuildUrl(clientCard.ExternalCardId, unixTimeFrom, unixTimeTo);
         var result = await _httpClient.GetAsync(url, cancellationToken);
-        var monobankTransactions = (await result.Content.ReadFromJsonAsync<IEnumerable<MonobankTransaction>>(cancellationToken:
+        var monobankTransactions = (await result.Content.ReadFromJsonAsync<IEnumerable<MonobankTransaction>>(
+            cancellationToken:
             cancellationToken) ?? Array.Empty<MonobankTransaction>()).ToList();
 
         if (monobankTransactions.Select(transaction => clientCard.AddTransaction(transaction.Description,
-                transaction.Amount, transaction.Balance, transaction.Time)).Any(transactionResult => transactionResult.IsFailure))
+                transaction.Amount.ToDecimal(), transaction.Balance.ToDecimal(), transaction.Time, transaction.Mcc))
+            .Any(transactionResult => transactionResult.IsFailure))
         {
             return Result.Failure(
                 new Error("ClientTransaction.CreationFailed", "Client transaction creation is failed"));
@@ -63,8 +66,8 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
     {
         if (dateFrom is not null && dateTo is not null)
             return $"/personal/statement/{externalCardId}/{dateFrom}/{dateTo}";
-        
-        return dateFrom is not null 
+
+        return dateFrom is not null
             ? $"/personal/statement/{externalCardId}/{dateFrom}/{DateTimeOffset.Now.ToUnixTimeSeconds()}"
             : $"/personal/statement/{externalCardId}/{DateTimeOffset.Now.ToUnixTimeSeconds()}";
     }
