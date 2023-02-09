@@ -8,8 +8,8 @@ public class ServicesModule : Module
 {
     protected override void Load(ContainerBuilder builder)
     {
-        builder.RegisterType<BrandFetchService>()
-            .As<IBrandFetchService>()
+        builder.RegisterType<GoogleImageSearchService>()
+            .As<IGoogleImageSearchService>()
             .InstancePerLifetimeScope();
     }
 }

@@ -7,20 +7,20 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Autofac" Version="6.5.0"/>
-        <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="8.0.0"/>
-        <PackageReference Include="AutoMapper" Version="12.0.0"/>
-        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.1"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="7.0.1"/>
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.2"/>
-        <PackageReference Include="Polly" Version="7.2.3"/>
-        <PackageReference Include="Quartz" Version="3.5.0"/>
-        <PackageReference Include="Quartz.Extensions.Hosting" Version="3.5.0"/>
+        <PackageReference Include="Autofac" Version="6.5.0" />
+        <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="8.0.0" />
+        <PackageReference Include="AutoMapper" Version="12.0.0" />
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.1" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="7.0.1" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+        <PackageReference Include="Polly" Version="7.2.3" />
+        <PackageReference Include="Quartz" Version="3.5.0" />
+        <PackageReference Include="Quartz.Extensions.Hosting" Version="3.5.0" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\OutlayApp.Application\OutlayApp.Application.csproj"/>
-        <ProjectReference Include="..\OutlayApp.Domain\OutlayApp.Domain.csproj"/>
+        <ProjectReference Include="..\OutlayApp.Application\OutlayApp.Application.csproj" />
+        <ProjectReference Include="..\OutlayApp.Domain\OutlayApp.Domain.csproj" />
     </ItemGroup>
 
 </Project>

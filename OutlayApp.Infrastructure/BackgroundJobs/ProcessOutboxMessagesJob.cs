@@ -42,37 +42,6 @@ public class ProcessOutboxMessagesJob : IJob
             message.ProcessedOnUtc = DateTimeOffset.Now.ToUnixTimeSeconds();
             await _context.SaveChangesAsync();
         }
-
-        // var messages = await _context
-        //     .Set<OutboxMessage>()
-        //     .Where(m => m.ProcessedOnUtc == null)
-        //     .Take(20)
-        //     .ToListAsync(context.CancellationToken);
-        //
-        // foreach (var item in messages)
-        // {
-        //     var domainEvent = JsonConvert.DeserializeObject<IDomainEvent>(
-        //         item.Content,
-        //         new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All }
-        //     );
-        //
-        //     if (domainEvent is null)
-        //         continue;
-        //
-        //     var policy = Policy
-        //         .Handle<Exception>()
-        //         .WaitAndRetryAsync(
-        //             5,
-        //             attempt => TimeSpan.FromMilliseconds(50 * attempt)
-        //         );
-        //
-        //     var policyResult = await policy.ExecuteAndCaptureAsync(() =>
-        //         _publisher.Publish(domainEvent, context.CancellationToken));
-        //
-        //     item.Error = policyResult.FinalException?.ToString();
-        //     item.ProcessedOnUtc = DateTimeOffset.Now.ToUnixTimeSeconds();
-        //
-        //     await _context.SaveChangesAsync();
     }
 }
 

@@ -28,8 +28,8 @@ public class
         var transactions = await _clientTransactionRepository
             .GetByPeriod(request.ClientCardId, dateFrom, dateTo, cancellationToken);
         
-        var infos = transactions!.GroupBy(x => x.Description)
-            .Select(x => new BrandFetchInfo
+        var grouped = transactions!.GroupBy(x => x.Description)
+            .Select(x => new GroupedTransaction
             {
                 Name = x.Key,
                 Amount = x.Sum(s => s.Amount), 
@@ -37,6 +37,6 @@ public class
             })
             .OrderBy(x => x.Amount);
 
-        return _mapper.Map<List<ClientTransactionsGroupedResponse>>(infos);
+        return _mapper.Map<List<ClientTransactionsGroupedResponse>>(grouped);
     }
 }

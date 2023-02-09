@@ -3,6 +3,7 @@ using AutoMapper;
 using OutlayApp.Application;
 using OutlayApp.Application.ClientTransactions;
 using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactionsByDescription;
+using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactionsGrouped;
 using OutlayApp.Domain.ClientTransactions;
 using OutlayApp.Infrastructure.Mapper.TypeConverters;
 
@@ -12,7 +13,7 @@ public class ClientTransactionsProfile : Profile
 {
     public ClientTransactionsProfile()
     {
-        CreateMap<BrandFetchInfo, ClientTransactionsGroupedResponse>()
+        CreateMap<GroupedTransaction, ClientTransactionsGroupedResponse>()
             .ConvertUsing<ClientTransactionConverter>();
         
         CreateMap<ClientTransaction, ClientTransactionByDescriptionResponse>()

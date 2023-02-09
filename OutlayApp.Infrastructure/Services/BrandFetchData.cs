@@ -1,4 +1,4 @@
-namespace OutlayApp.Application;
+namespace OutlayApp.Infrastructure.Services;
 
 public class BrandFetchData
 {
@@ -6,11 +6,4 @@ public class BrandFetchData
     public string Name { get; set; }
     public string Domain { get; set; }
     public string Icon { get; set; }
-}
-
-public class BrandFetchInfo
-{
-    public string Name { get; set; }
-    public decimal Amount { get; set; }
-    public int Mcc { get; set; }
 }
