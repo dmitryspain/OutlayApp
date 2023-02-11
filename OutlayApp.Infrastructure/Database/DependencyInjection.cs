@@ -21,6 +21,7 @@ public static class DependencyInjection
     {
         services.AddDbContext<OutlayContext>(
             options => options.UseNpgsql(configuration[DbConnectionConstants.ConnectionString]));
+        AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
         return services;
     }
 }

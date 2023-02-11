@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using OutlayApp.Application;
 
 namespace OutlayApp.Infrastructure.Database.InMemoryDb;
 

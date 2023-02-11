@@ -4,6 +4,7 @@ using OutlayApp.Application.ClientTransactions.Commands;
 using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactions;
 using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactionsByDescription;
 using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactionsGrouped;
+using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactionsWeekly;
 
 namespace OutlayApp.API.ClientTransactions;
 
@@ -28,7 +29,7 @@ public class ClientTransactionsController : ControllerBase
     
 
     [HttpGet("by-period")]
-    public async Task<IActionResult> GetTransactionsByPeriod(Guid clientCardId, long? dateFrom, long? dateTo,
+    public async Task<IActionResult> GetTransactionsByPeriod(Guid clientCardId, DateTime? dateFrom, DateTime? dateTo,
         CancellationToken cancellationToken)
     {
         var command = new GetClientTransactionsQuery(clientCardId, dateFrom, dateTo);
@@ -37,7 +38,7 @@ public class ClientTransactionsController : ControllerBase
     }
     
     [HttpGet("grouped")]
-    public async Task<IActionResult> GetTransactionsGrouped(Guid clientCardId, long? dateFrom, long? dateTo,
+    public async Task<IActionResult> GetTransactionsGrouped(Guid clientCardId, DateTime? dateFrom, DateTime? dateTo,
         CancellationToken cancellationToken)
     {
         var command = new GetClientTransactionsGroupedQuery(clientCardId, dateFrom, dateTo);
@@ -50,6 +51,15 @@ public class ClientTransactionsController : ControllerBase
         CancellationToken cancellationToken)
     {
         var command = new GetClientTransactionsByDescriptionQuery(clientCardId, description);
+        var result = await _sender.Send(command, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
+    }
+    
+    [HttpGet("weekly")]
+    public async Task<IActionResult> GetWeeklyTransactions(Guid clientCardId, 
+        CancellationToken cancellationToken)
+    {
+        var command = new GetClientTransactionsWeeklyQuery(clientCardId);
         var result = await _sender.Send(command, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
     }

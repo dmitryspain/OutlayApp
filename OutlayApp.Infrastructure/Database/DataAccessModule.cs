@@ -19,11 +19,6 @@ public class DataAccessModule : Module
             .As<IUnitOfWork>()
             .InstancePerLifetimeScope();
 
-
-        // builder.RegisterType<CustomerRepository>()
-        //     .As<ICustomerRepository>()
-        //     .InstancePerLifetimeScope();
-        
         builder.RegisterAssemblyTypes(AssemblyReference.Assembly)
             .Where(t => t.Name.EndsWith("Repository"))
             .AsImplementedInterfaces();

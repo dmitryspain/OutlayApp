@@ -14,7 +14,7 @@ public class ClientTransactionRepository : IClientTransactionRepository
         _context = context;
     }
 
-    public Task<List<ClientTransaction>> GetByPeriod(Guid clientCardId, long dateFrom, long dateTo,
+    public Task<List<ClientTransaction>> GetByPeriod(Guid clientCardId, DateTime dateFrom, DateTime dateTo,
         CancellationToken cancellationToken = default)
     {
         return _context.ClientTransactions.Where(x =>

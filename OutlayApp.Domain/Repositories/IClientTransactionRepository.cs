@@ -4,7 +4,7 @@ namespace OutlayApp.Domain.Repositories;
 
 public interface IClientTransactionRepository : IRepository<ClientTransaction>
 {
-    Task<List<ClientTransaction>> GetByPeriod(Guid clientCardId, long dateFrom, long dateTo,
+    Task<List<ClientTransaction>> GetByPeriod(Guid clientCardId, DateTime dateFrom, DateTime dateTo,
         CancellationToken cancellationToken = default);
     
     Task<List<ClientTransaction>> GetByDescription(Guid clientCardId, string description,

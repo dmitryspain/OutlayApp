@@ -1,6 +1,3 @@
-using Amazon;
-using Amazon.SecretsManager;
-using Amazon.SecretsManager.Model;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using OutlayApp.Application.Configuration.BrandFetch;

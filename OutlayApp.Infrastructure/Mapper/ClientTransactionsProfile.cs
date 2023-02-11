@@ -1,7 +1,6 @@
-using System.Globalization;
 using AutoMapper;
-using OutlayApp.Application;
 using OutlayApp.Application.ClientTransactions;
+using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactions;
 using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactionsByDescription;
 using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactionsGrouped;
 using OutlayApp.Domain.ClientTransactions;
@@ -17,8 +16,12 @@ public class ClientTransactionsProfile : Profile
             .ConvertUsing<ClientTransactionConverter>();
         
         CreateMap<ClientTransaction, ClientTransactionByDescriptionResponse>()
-            .ForMember(x => x.Date, opt => opt.MapFrom(x => DateTimeOffset.FromUnixTimeSeconds(x.DateOccured)
-                .LocalDateTime.ToString(CultureInfo.InvariantCulture)))
+            // .ForMember(x => x.DateOccured, opt => opt.MapFrom(x => DateTimeOffset.FromUnixTimeSeconds(x.DateOccured)
+            //     .LocalDateTime.ToString(CultureInfo.InvariantCulture)))
             .ForMember(x => x.Name, opt => opt.MapFrom(x => x.Description));
+
+        CreateMap<ClientTransaction, ClientTransactionDto>();
+        // .ForMember(x => x.DateOccured,
+        //     opt => opt.MapFrom(x => DateTimeOffset.FromUnixTimeSeconds(x.DateOccured).LocalDateTime));
     }
 }

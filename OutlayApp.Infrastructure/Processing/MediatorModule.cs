@@ -24,6 +24,8 @@ public class MediatorModule : Module
                 .AsClosedTypesOf(mediatrOpenType)
                 .FindConstructorsWith(new AllConstructorFinder())
                 .AsImplementedInterfaces();
+            
+            //todo figure out about constructor finder
         }
 
         builder.Register<ServiceFactory>(ctx =>

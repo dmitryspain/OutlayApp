@@ -37,9 +37,10 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
         if (latest is null)
             unixTimeFrom = DateTimeOffset.Now.AddDays(-MaxDaysPeriod).ToUnixTimeSeconds();
         else
-            unixTimeFrom = DateTimeOffset.Now - DateTimeOffset.FromUnixTimeSeconds(latest.DateOccured)
+            unixTimeFrom = DateTimeOffset.Now - latest.DateOccured
                            < TimeSpan.FromDays(MaxDaysPeriod)
-                ? latest.DateOccured + 1 // because we dont want to take the existing record from monobank api
+                ? ((DateTimeOffset)latest!.DateOccured).ToUnixTimeSeconds() +
+                  1 // because we dont want to take the existing record from monobank api
                 : DateTimeOffset.Now.AddDays(-MaxDaysPeriod).ToUnixTimeSeconds();
 
         var unixTimeTo = DateTimeOffset.Now.ToUnixTimeSeconds();
@@ -50,7 +51,8 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
             cancellationToken) ?? Array.Empty<MonobankTransaction>()).ToList();
 
         if (monobankTransactions.Select(transaction => clientCard.AddTransaction(transaction.Description,
-                transaction.Amount.ToDecimal(), transaction.Balance.ToDecimal(), transaction.Time, transaction.Mcc))
+                transaction.Amount.ToDecimal(), transaction.Balance.ToDecimal(),
+                DateTimeOffset.FromUnixTimeSeconds(transaction.Time).DateTime, transaction.Mcc))
             .Any(transactionResult => transactionResult.IsFailure))
         {
             return Result.Failure(

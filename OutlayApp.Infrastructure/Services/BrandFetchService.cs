@@ -1,5 +1,4 @@
 using System.Net.Http.Json;
-using OutlayApp.Application;
 using OutlayApp.Infrastructure.Services.Interfaces;
 
 namespace OutlayApp.Infrastructure.Services;

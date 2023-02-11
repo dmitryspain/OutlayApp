@@ -5,7 +5,8 @@ namespace OutlayApp.Domain.ClientTransactions;
 public class ClientTransaction : Entity, IAggregateRoot
 {
     public Guid ClientCardId { get; private set; }
-    public long DateOccured { get; private set; }
+    public DateTime DateOccured { get; private set; }
+    // public long DateOccured { get; private set; }
     public string Description { get; private set; }
     public decimal Amount { get; private set; }
     public decimal BalanceAfter { get; private set; }
@@ -17,7 +18,7 @@ public class ClientTransaction : Entity, IAggregateRoot
     }
 
     private ClientTransaction(Guid id, Guid clientCardId, string description, decimal amount,
-        decimal balanceAfter, long dateOccured, int mcc)
+        decimal balanceAfter, DateTime dateOccured, int mcc)
         : base(id)
     {
         ClientCardId = clientCardId;
@@ -29,7 +30,7 @@ public class ClientTransaction : Entity, IAggregateRoot
     }
 
     public static ClientTransaction Create(Guid cardId, string description, decimal amount,
-        decimal balanceAfter, long dateOccured, int mcc)
+        decimal balanceAfter, DateTime dateOccured, int mcc)
     {
         return new ClientTransaction(Guid.NewGuid(), cardId, description, amount, balanceAfter, dateOccured, mcc);
     }
