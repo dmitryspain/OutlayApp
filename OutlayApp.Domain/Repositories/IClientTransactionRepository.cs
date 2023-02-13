@@ -11,6 +11,5 @@ public interface IClientTransactionRepository : IRepository<ClientTransaction>
         CancellationToken cancellationToken = default);
     
     Task<ClientTransaction> GetLatest(Guid clientCardId, CancellationToken cancellationToken = default);
-    Task Add(ClientTransaction transaction);
     Task AddRange(IEnumerable<ClientTransaction> transactions, CancellationToken cancellationToken = default);
 }

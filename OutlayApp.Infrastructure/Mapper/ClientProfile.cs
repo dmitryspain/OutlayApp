@@ -3,7 +3,7 @@ using OutlayApp.Application.Clients.Queries.GetClientInfo;
 using OutlayApp.Domain.ClientCards;
 using OutlayApp.Domain.Clients;
 
-namespace OutlayApp.Application.Mapper;
+namespace OutlayApp.Infrastructure.Mapper;
 
 public class ClientProfile : Profile
 {

@@ -1,7 +1,9 @@
 using System.Net.Http.Json;
+using MediatR;
 using OutlayApp.Application.Abstractions.Messaging;
 using OutlayApp.Application.Configuration.Extensions;
 using OutlayApp.Application.Configuration.Monobank;
+using OutlayApp.Application.LogoReferences;
 using OutlayApp.Application.Transactions;
 using OutlayApp.Domain.Repositories;
 using OutlayApp.Domain.Shared;
@@ -11,15 +13,18 @@ namespace OutlayApp.Application.ClientTransactions.Commands;
 public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatestTransactionsCommand>
 {
     private const int MaxDaysPeriod = 30;
+    private const int FirstLogosFetchCount = 10;
     private readonly HttpClient _httpClient;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ISender _sender;
     private readonly IClientCardsRepository _cardsRepository;
     private readonly IClientTransactionRepository _transactionRepository;
 
     public FetchLatestTransactionsCommandHandler(IHttpClientFactory factory, IClientCardsRepository cardsRepository,
-        IClientTransactionRepository transactionRepository, IUnitOfWork unitOfWork)
+        IClientTransactionRepository transactionRepository, IUnitOfWork unitOfWork, ISender sender)
     {
         _unitOfWork = unitOfWork;
+        _sender = sender;
         _cardsRepository = cardsRepository;
         _transactionRepository = transactionRepository;
         _httpClient = factory.CreateClient(MonobankConstants.HttpClient);
@@ -39,8 +44,8 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
         else
             unixTimeFrom = DateTimeOffset.Now - latest.DateOccured
                            < TimeSpan.FromDays(MaxDaysPeriod)
-                ? ((DateTimeOffset)latest!.DateOccured).ToUnixTimeSeconds() +
-                  1 // because we dont want to take the existing record from monobank api
+                ? ((DateTimeOffset)latest!.DateOccured).ToUnixTimeSeconds() + 1
+                // because we dont want to take the existing record from monobank api
                 : DateTimeOffset.Now.AddDays(-MaxDaysPeriod).ToUnixTimeSeconds();
 
         var unixTimeTo = DateTimeOffset.Now.ToUnixTimeSeconds();
@@ -58,6 +63,16 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
             return Result.Failure(
                 new Error("ClientTransaction.CreationFailed", "Client transaction creation is failed"));
         }
+
+        var mostFrequencyTransactions = monobankTransactions
+            .Where(x=>x.Mcc != 4829) // todo find good way to solve this
+            .GroupBy(x => x.Description)
+            .OrderByDescending(x => x.Count())
+            .Take(FirstLogosFetchCount)
+            .Select(x => x.Key);
+
+        var freqLogosCommand = new FetchMostFrequencyIconsCommand(mostFrequencyTransactions);
+        await _sender.Send(freqLogosCommand, cancellationToken);
 
         await _transactionRepository.AddRange(clientCard.Transactions, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

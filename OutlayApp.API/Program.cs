@@ -26,7 +26,8 @@ builder.Services.AddControllers().Services
     .AddDbContext(builder.Configuration)
     .AddRedis(builder.Configuration)
     .AddBackgroundJobs()
-    .AddAutoMapper();
+    .AddAutoMapper()
+    .AddMemoryCache();
 
 
 // var env = builder.Environment.EnvironmentName;

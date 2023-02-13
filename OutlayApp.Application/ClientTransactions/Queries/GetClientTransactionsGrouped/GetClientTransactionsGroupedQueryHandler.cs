@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using AutoMapper;
 using OutlayApp.Application.Abstractions.Messaging;
 using OutlayApp.Domain.Repositories;
@@ -37,6 +38,11 @@ public class
             })
             .OrderBy(x => x.Amount);
 
-        return _mapper.Map<List<ClientTransactionsGroupedResponse>>(grouped);
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+        var res = _mapper.Map<List<ClientTransactionsGroupedResponse>>(grouped);
+        stopwatch.Stop();
+        var resms = stopwatch.ElapsedMilliseconds;
+        return res;
     }
 }

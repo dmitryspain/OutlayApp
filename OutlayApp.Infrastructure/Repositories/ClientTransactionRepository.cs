@@ -39,11 +39,6 @@ public class ClientTransactionRepository : IClientTransactionRepository
             .FirstOrDefaultAsync(cancellationToken)!;
     }
 
-    public Task Add(ClientTransaction transaction)
-    {
-        return _context.AddAsync(transaction).AsTask();
-    }
-
     public Task AddRange(IEnumerable<ClientTransaction> transactions, CancellationToken cancellationToken = default)
     {
         return _context.AddRangeAsync(transactions, cancellationToken);

@@ -1,6 +1,9 @@
+using OutlayApp.Application.ClientTransactions;
+using OutlayApp.Application.ClientTransactions.Commands;
+using OutlayApp.Application.LogoReferences;
+
 namespace OutlayApp.Infrastructure.Services.Interfaces;
 
-public interface IGoogleImageSearchService
+public interface IGoogleImageSearchService : ICompanyLogoFinder
 {
-    Task<string> GetCompanyLogo(string logoName, int mcc, CancellationToken cancellationToken);
 }
