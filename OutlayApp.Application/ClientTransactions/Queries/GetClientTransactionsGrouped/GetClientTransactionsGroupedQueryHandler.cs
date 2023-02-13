@@ -38,11 +38,7 @@ public class
             })
             .OrderBy(x => x.Amount);
 
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
         var res = _mapper.Map<List<ClientTransactionsGroupedResponse>>(grouped);
-        stopwatch.Stop();
-        var resms = stopwatch.ElapsedMilliseconds;
         return res;
     }
 }
