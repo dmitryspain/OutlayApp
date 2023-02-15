@@ -10,13 +10,17 @@ public class FetchMostFrequencyIconsCommandHandler : ICommandHandler<FetchMostFr
     private readonly ICompanyLogoFinder _logoFinder;
     private readonly ILogoReferenceRepository _logoReferenceRepository;
     private readonly IInvalidReferenceRepository _invalidReferenceRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
     public FetchMostFrequencyIconsCommandHandler(ICompanyLogoFinder logoFinder,
-        ILogoReferenceRepository logoReferenceRepository, IInvalidReferenceRepository invalidReferenceRepository)
+        ILogoReferenceRepository logoReferenceRepository,
+        IInvalidReferenceRepository invalidReferenceRepository, 
+        IUnitOfWork unitOfWork)
     {
         _logoFinder = logoFinder;
         _logoReferenceRepository = logoReferenceRepository;
         _invalidReferenceRepository = invalidReferenceRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result> Handle(FetchMostFrequencyIconsCommand request, CancellationToken cancellationToken)
@@ -24,6 +28,9 @@ public class FetchMostFrequencyIconsCommandHandler : ICommandHandler<FetchMostFr
         foreach (var transaction in request.FrequencyTransactions)
         {
             if (await _logoReferenceRepository.ContainsAsync(transaction, cancellationToken))
+                continue;
+
+            if (await _invalidReferenceRepository.ContainsAsync(transaction, cancellationToken))
                 continue;
 
             var logo = await _logoFinder.GetCompanyLogo(transaction, cancellationToken);
@@ -39,6 +46,7 @@ public class FetchMostFrequencyIconsCommandHandler : ICommandHandler<FetchMostFr
             }
         }
 
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
 }
