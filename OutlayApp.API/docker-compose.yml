@@ -1,15 +1,10 @@
-version: '3.8'
+version: "3.9"
 services:
-  db:
+  postgres:
     image: postgres:14.1-alpine
-    restart: always
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      POSTGRES_DB: "outlayapp"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
     ports:
-      - '5432:5432'
-    volumes:
-      - db:/var/lib/postgresql/data
-volumes:
-  db:
-    driver: local
+      - "5432:5432"
