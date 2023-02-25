@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Transactions;
 using MediatR;
 using OutlayApp.Application.Abstractions.Messaging;
 using OutlayApp.Application.Configuration.Extensions;
@@ -71,11 +72,15 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
             .Take(FirstLogosFetchCount)
             .Select(x => x.Key);
 
+        using var transaction = _unitOfWork.BeginTransaction();
+        
         var freqLogosCommand = new FetchMostFrequencyIconsCommand(mostFrequencyTransactions);
         await _sender.Send(freqLogosCommand, cancellationToken);
 
         await _transactionRepository.AddRange(clientCard.Transactions, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        
+        transaction.Commit();
         return Result.Success();
     }
 

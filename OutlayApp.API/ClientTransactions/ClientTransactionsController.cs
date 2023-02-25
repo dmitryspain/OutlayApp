@@ -1,5 +1,10 @@
+using Amazon;
+using Amazon.SecretsManager;
+using Amazon.SecretsManager.Model;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using OutlayApp.API.Options.DatabaseOptions;
 using OutlayApp.Application.ClientTransactions.Commands;
 using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactions;
 using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactionsByDescription;
@@ -14,12 +19,47 @@ namespace OutlayApp.API.ClientTransactions;
 public class ClientTransactionsController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IOptions<DatabaseOptions> _databaseOptions;
 
-    public ClientTransactionsController(ISender sender)
+    public ClientTransactionsController(ISender sender, IOptions<DatabaseOptions> databaseOptions)
     {
         _sender = sender;
+        _databaseOptions = databaseOptions;
     }
 
+    
+    
+    
+    [HttpGet("test")]
+    public async Task<IActionResult> Test(CancellationToken cancellationToken)
+    {
+        string secretName = "ApiKey";
+        string region = "us-east-1";
+
+        IAmazonSecretsManager client = new AmazonSecretsManagerClient(RegionEndpoint.GetBySystemName(region));
+
+        GetSecretValueRequest request = new GetSecretValueRequest
+        {
+            SecretId = secretName,
+            VersionStage = "AWSCURRENT", // VersionStage defaults to AWSCURRENT if unspecified.
+        };
+
+        GetSecretValueResponse response;
+
+        try
+        {
+            response = await client.GetSecretValueAsync(request);
+        }
+        catch (Exception e)
+        {
+            // For a list of the exceptions thrown, see
+            // https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+            throw e;
+        }
+
+        string secret = response.SecretString;
+        return null;
+    }
     [HttpGet("latest")]
     public async Task<IActionResult> FetchLatestTransactions(string externalCardId, CancellationToken cancellationToken)
     {

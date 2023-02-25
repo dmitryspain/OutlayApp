@@ -7,7 +7,6 @@ public class OutlayInMemoryContext : DbContext
     public OutlayInMemoryContext(DbContextOptions<OutlayInMemoryContext> options)
         : base(options)
     {
-        Database.EnsureDeleted();
     }
 
     public DbSet<MccInfo> MccInfos { get; set; }

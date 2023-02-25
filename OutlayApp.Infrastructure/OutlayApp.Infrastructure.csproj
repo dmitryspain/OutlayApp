@@ -25,7 +25,6 @@
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.1" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="7.0.1" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
-        <PackageReference Include="Polly" Version="7.2.3" />
         <PackageReference Include="Quartz" Version="3.5.0" />
         <PackageReference Include="Quartz.Extensions.Hosting" Version="3.5.0" />
     </ItemGroup>
@@ -35,6 +34,14 @@
         <ProjectReference Include="..\OutlayApp.Domain\OutlayApp.Domain.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <Content Update="appsettings.json">
+          <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+          <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        </Content>
+    </ItemGroup>
+    
     <ItemGroup>
       <Reference Include="Microsoft.Extensions.Configuration">
         <HintPath>..\..\..\..\..\usr\local\share\dotnet\shared\Microsoft.AspNetCore.App\7.0.0-rc.1.22427.2\Microsoft.Extensions.Configuration.dll</HintPath>

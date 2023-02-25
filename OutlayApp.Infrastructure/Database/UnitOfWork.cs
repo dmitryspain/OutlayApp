@@ -1,3 +1,5 @@
+using System.Data;
+using Microsoft.EntityFrameworkCore.Storage;
 using OutlayApp.Domain.Repositories;
 using OutlayApp.Infrastructure.Processing;
 
@@ -18,5 +20,11 @@ public class UnitOfWork : IUnitOfWork
     {
         await _domainEventsDispatcher.DispatchEventsAsync();
         await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public IDbTransaction BeginTransaction()
+    {
+        var transaction = _context.Database.BeginTransaction();
+        return transaction.GetDbTransaction();
     }
 }
