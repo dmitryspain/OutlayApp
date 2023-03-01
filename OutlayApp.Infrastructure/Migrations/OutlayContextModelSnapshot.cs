@@ -71,7 +71,7 @@ namespace OutlayApp.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("DateOccured")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -113,7 +113,7 @@ namespace OutlayApp.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("LastTimeRetrieved")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -131,7 +131,7 @@ namespace OutlayApp.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("LastTimeRetrieved")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
                         .IsRequired()

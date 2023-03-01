@@ -105,10 +105,9 @@ public class ClientTransactionsController : ControllerBase
     }
 
     [HttpGet("weekly")]
-    public async Task<IActionResult> GetWeeklyTransactions(Guid clientCardId,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> GetWeeklyTransactions(Guid clientCardId, int skipWeeks, CancellationToken cancellationToken)
     {
-        var command = new GetClientTransactionsWeeklyQuery(clientCardId);
+        var command = new GetClientTransactionsWeeklyQuery(clientCardId, skipWeeks);
         var result = await _sender.Send(command, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
     }

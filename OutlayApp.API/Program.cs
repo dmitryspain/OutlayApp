@@ -1,6 +1,10 @@
 using Amazon;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using Azure.Core;
+using Azure.Identity;
+using Microsoft.Azure.KeyVault;
+using Microsoft.Extensions.Configuration.AzureKeyVault;
 using OutlayApp.API.Options.DatabaseOptions;
 using OutlayApp.Application.Configuration.BrandFetch;
 using OutlayApp.Application.Configuration.Database;
@@ -21,7 +25,6 @@ builder.Services.AddControllers().Services
             var settings = builder.Configuration.GetSection(MonobankConstants.Name)
                 .Get<MonobankSettings>();
             httpClient.BaseAddress = new Uri(settings!.BaseUrl);
-            httpClient.DefaultRequestHeaders.Add(MonobankConstants.TokenHeader, settings.PersonalToken);
         }).Services
     .AddInMemoryDbContext()
     .AddDbContext(builder.Configuration)
@@ -44,6 +47,15 @@ builder.Services.AddControllers().Services
 //     });
 
 
+// var vaultUrl = builder.Configuration["KeyVault:Url"];
+// var keyVaultClient = new KeyVaultClient((_, _, _) =>
+// {
+//     var credential = new DefaultAzureCredential(false);
+//     var token = credential.GetToken(new TokenRequestContext(new[] { "https://vault.azure.net/.default" }));
+//     return Task.FromResult(token.Token);
+// });
+// builder.Configuration.AddAzureKeyVault(vaultUrl, keyVaultClient, new DefaultKeyVaultSecretManager());
+
 builder.Services.AddOptions<DatabaseOptions>().BindConfiguration("Database");
 builder.Services.Configure<MonobankSettings>(x => builder.Configuration.GetSection(MonobankConstants.Name).Bind(x));
 builder.Services.Configure<BrandFetchSettings>(x =>
@@ -59,7 +71,7 @@ builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory())
     });
 
 var app = builder.Build();
-if (app.Environment.IsDevelopment())
+// if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();

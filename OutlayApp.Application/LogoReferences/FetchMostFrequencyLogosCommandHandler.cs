@@ -14,7 +14,7 @@ public class FetchMostFrequencyIconsCommandHandler : ICommandHandler<FetchMostFr
 
     public FetchMostFrequencyIconsCommandHandler(ICompanyLogoFinder logoFinder,
         ILogoReferenceRepository logoReferenceRepository,
-        IInvalidReferenceRepository invalidReferenceRepository, 
+        IInvalidReferenceRepository invalidReferenceRepository,
         IUnitOfWork unitOfWork)
     {
         _logoFinder = logoFinder;
@@ -44,9 +44,9 @@ public class FetchMostFrequencyIconsCommandHandler : ICommandHandler<FetchMostFr
                 var invalidReference = InvalidReference.Create(transaction, DateTime.Now);
                 await _invalidReferenceRepository.AddAsync(invalidReference, cancellationToken);
             }
+
         }
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
 }

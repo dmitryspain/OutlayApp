@@ -25,6 +25,9 @@ public class UnitOfWork : IUnitOfWork
     public IDbTransaction BeginTransaction()
     {
         var transaction = _context.Database.BeginTransaction();
+        Current = _context.Database.CurrentTransaction;
         return transaction.GetDbTransaction();
     }
+
+    public IDbContextTransaction? Current { get; set; }
 }

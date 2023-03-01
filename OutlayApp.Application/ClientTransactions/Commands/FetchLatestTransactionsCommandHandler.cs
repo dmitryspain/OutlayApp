@@ -20,14 +20,17 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
     private readonly ISender _sender;
     private readonly IClientCardsRepository _cardsRepository;
     private readonly IClientTransactionRepository _transactionRepository;
+    private readonly IClientRepository _clientRepository;
 
     public FetchLatestTransactionsCommandHandler(IHttpClientFactory factory, IClientCardsRepository cardsRepository,
-        IClientTransactionRepository transactionRepository, IUnitOfWork unitOfWork, ISender sender)
+        IClientTransactionRepository transactionRepository, IClientRepository clientRepository, IUnitOfWork unitOfWork,
+        ISender sender)
     {
         _unitOfWork = unitOfWork;
         _sender = sender;
         _cardsRepository = cardsRepository;
         _transactionRepository = transactionRepository;
+        _clientRepository = clientRepository;
         _httpClient = factory.CreateClient(MonobankConstants.HttpClient);
     }
 
@@ -51,6 +54,10 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
 
         var unixTimeTo = DateTimeOffset.Now.ToUnixTimeSeconds();
         var url = BuildUrl(clientCard.ExternalCardId, unixTimeFrom, unixTimeTo);
+        var client = await _clientRepository.GetById(clientCard.ClientId, cancellationToken);
+        _httpClient.DefaultRequestHeaders.Add(MonobankConstants.TokenHeader, client.PersonalToken);
+        //todo refactor this
+        
         var result = await _httpClient.GetAsync(url, cancellationToken);
         var monobankTransactions = (await result.Content.ReadFromJsonAsync<IEnumerable<MonobankTransaction>>(
             cancellationToken:
@@ -66,21 +73,21 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
         }
 
         var mostFrequencyTransactions = monobankTransactions
-            .Where(x=>x.Mcc != 4829) // todo find good way to solve this
+            .Where(x => x.Mcc != 4829) // todo find good way to solve this
             .GroupBy(x => x.Description)
             .OrderByDescending(x => x.Count())
             .Take(FirstLogosFetchCount)
             .Select(x => x.Key);
 
-        using var transaction = _unitOfWork.BeginTransaction();
-        
+        // using var transaction = _unitOfWork.BeginTransaction();
+
         var freqLogosCommand = new FetchMostFrequencyIconsCommand(mostFrequencyTransactions);
         await _sender.Send(freqLogosCommand, cancellationToken);
 
         await _transactionRepository.AddRange(clientCard.Transactions, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        
-        transaction.Commit();
+
+        // transaction.Commit();
         return Result.Success();
     }
 

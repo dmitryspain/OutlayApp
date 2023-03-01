@@ -18,15 +18,15 @@ public class GetClientTransactionsWeeklyQueryHandler : IQueryHandler<GetClientTr
         _clientTransactionRepository = clientTransactionRepository;
         _mapper = mapper;
     }
-    
+
     public async Task<Result<List<ClientTransactionsWeeklyResponse>>> Handle(GetClientTransactionsWeeklyQuery request,
         CancellationToken cancellationToken)
     {
         const int daysInWeek = 7;
-        var currDay = (int)DateTime.Now.DayOfWeek;
+        var currDay = DateTimeHelper.ToStandardDayOfWeek(DateTime.Now.DayOfWeek);
         var dayStart = currDay + request.SkipWeeks * daysInWeek;
         
-        var dateStart = DateTime.Now.Date.AddDays(-dayStart);
+        var dateStart = DateTime.Now.Date.AddDays(-dayStart); 
         var dateEnd = DateTime.Now.Date.AddDays(daysInWeek - dayStart);
         
         var transactions = await _clientTransactionRepository.GetByPeriod(request.ClientCardId,
