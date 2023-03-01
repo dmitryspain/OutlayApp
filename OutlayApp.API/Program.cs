@@ -2,9 +2,9 @@ using Amazon;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Azure.Core;
+using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
-using Microsoft.Azure.KeyVault;
-using Microsoft.Extensions.Configuration.AzureKeyVault;
+using Azure.Security.KeyVault.Secrets;
 using OutlayApp.API.Options.DatabaseOptions;
 using OutlayApp.Application.Configuration.BrandFetch;
 using OutlayApp.Application.Configuration.Database;
@@ -47,14 +47,16 @@ builder.Services.AddControllers().Services
 //     });
 
 
-// var vaultUrl = builder.Configuration["KeyVault:Url"];
-// var keyVaultClient = new KeyVaultClient((_, _, _) =>
-// {
-//     var credential = new DefaultAzureCredential(false);
-//     var token = credential.GetToken(new TokenRequestContext(new[] { "https://vault.azure.net/.default" }));
-//     return Task.FromResult(token.Token);
-// });
-// builder.Configuration.AddAzureKeyVault(vaultUrl, keyVaultClient, new DefaultKeyVaultSecretManager());
+var vaultUrl = builder.Configuration["KeyVault:Url"];
+var tenantId = builder.Configuration["KeyVault:TenantId"];
+var clientId = builder.Configuration["KeyVault:ClientId"];
+var secretId = builder.Configuration["KeyVault:ClientSecretId"];
+
+var credential = new ClientSecretCredential(tenantId, clientId, secretId);
+var client = new SecretClient(new Uri(vaultUrl!), credential);
+builder.Configuration.AddAzureKeyVault(client, new AzureKeyVaultConfigurationOptions());
+
+var secret = client.GetSecret("OutlayAppDbPassword");
 
 builder.Services.AddOptions<DatabaseOptions>().BindConfiguration("Database");
 builder.Services.Configure<MonobankSettings>(x => builder.Configuration.GetSection(MonobankConstants.Name).Bind(x));
@@ -63,11 +65,11 @@ builder.Services.Configure<BrandFetchSettings>(x =>
 builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory())
     .ConfigureContainer<ContainerBuilder>(containerBuilder =>
     {
+        var connectionString = builder.Configuration[DbConnectionConstants.ConnectionString]!;
         containerBuilder.RegisterModule<ServicesModule>();
         containerBuilder.RegisterModule<MediatorModule>();
         containerBuilder.RegisterModule<ProcessingModule>();
-        containerBuilder.RegisterModule(
-            new DataAccessModule(builder.Configuration[DbConnectionConstants.ConnectionString]!));
+        containerBuilder.RegisterModule(new DataAccessModule(connectionString));
     });
 
 var app = builder.Build();
