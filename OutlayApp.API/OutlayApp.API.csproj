@@ -12,29 +12,29 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AutoMapper" Version="12.0.0"/>
-        <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.0"/>
-        <PackageReference Include="Azure.Extensions.AspNetCore.Configuration.Secrets" Version="1.2.2"/>
-        <PackageReference Include="Azure.Identity" Version="1.9.0-beta.2"/>
-        <PackageReference Include="Azure.Security.KeyVault.Secrets" Version="4.5.0-beta.1"/>
-        <PackageReference Include="Kralizek.Extensions.Configuration.AWSSecretsManager" Version="1.7.0"/>
-        <PackageReference Include="MediatR" Version="11.1.0"/>
-        <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="11.0.0"/>
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.1"/>
+        <PackageReference Include="AutoMapper" Version="12.0.0" />
+        <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.0" />
+        <PackageReference Include="Azure.Extensions.AspNetCore.Configuration.Secrets" Version="1.2.2" />
+        <PackageReference Include="Azure.Identity" Version="1.9.0-beta.2" />
+        <PackageReference Include="Azure.Security.KeyVault.Secrets" Version="4.5.0-beta.1" />
+        <PackageReference Include="Kralizek.Extensions.Configuration.AWSSecretsManager" Version="1.7.0" />
+        <PackageReference Include="MediatR" Version="11.1.0" />
+        <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="11.0.0" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.1" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.3">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="7.0.1"/>
-        <PackageReference Include="Microsoft.NET.Build.Containers" Version="0.3.2"/>
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.2"/>
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="7.0.1" />
+        <PackageReference Include="Microsoft.NET.Build.Containers" Version="0.3.2" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
     </ItemGroup>
 
 
     <ItemGroup>
-        <ProjectReference Include="..\OutlayApp.Application\OutlayApp.Application.csproj"/>
-        <ProjectReference Include="..\OutlayApp.Infrastructure\OutlayApp.Infrastructure.csproj"/>
+        <ProjectReference Include="..\OutlayApp.Application\OutlayApp.Application.csproj" />
+        <ProjectReference Include="..\OutlayApp.Infrastructure\OutlayApp.Infrastructure.csproj" />
     </ItemGroup>
 
 
@@ -49,11 +49,8 @@
 
 
     <ItemGroup>
-        <Content Remove="appsettings.Development.json"/>
+        <Content Remove="appsettings.Development.json" />
         <None Include="appsettings.Development.json">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Include="appsettings.Production.json">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
     </ItemGroup>

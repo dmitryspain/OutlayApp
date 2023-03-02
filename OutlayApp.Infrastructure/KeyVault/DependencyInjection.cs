@@ -28,10 +28,10 @@ public static class DependencyInjection
         if (!isProduction)
             return configuration;
         
-        var vaultUrl = configuration["KeyVault:Url"];
-        var tenantId = configuration["KeyVault:TenantId"];
-        var clientId = configuration["KeyVault:ClientId"];
-        var secretId = configuration["KeyVault:ClientSecretId"];
+        var vaultUrl = configuration[KeyVaultConstants.Url];
+        var tenantId = configuration[KeyVaultConstants.TenantId];
+        var clientId = configuration[KeyVaultConstants.ClientId];
+        var secretId = configuration[KeyVaultConstants.ClientSecretId];
 
         var credential = new ClientSecretCredential(tenantId, clientId, secretId);
         var client = new SecretClient(new Uri(vaultUrl!), credential);
