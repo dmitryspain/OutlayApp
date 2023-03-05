@@ -8,10 +8,11 @@ using OutlayApp.Infrastructure.BackgroundJobs;
 using OutlayApp.Infrastructure.Database;
 using OutlayApp.Infrastructure.Processing;
 using OutlayApp.Infrastructure.KeyVault;
-
 using OutlayApp.Infrastructure.Mapper;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.AddAzureWebAppDiagnostics();
 
 builder.Services.AddControllers().Services
     .AddEndpointsApiExplorer()
@@ -28,6 +29,10 @@ builder.Services.AddControllers().Services
     .AddBackgroundJobs()
     .AddAutoMapper()
     .AddMemoryCache();
+
+var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
+logger.LogInformation("App has been started 123");
+logger.LogWarning("App has been started !123");
 
 builder.Configuration.AddKeyVault(builder.Environment.IsProduction());
 builder.Services.AddOptions<DatabaseOptions>().BindConfiguration(DbConnectionConstants.ConnectionString);
