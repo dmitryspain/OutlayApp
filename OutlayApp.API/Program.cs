@@ -12,8 +12,6 @@ using OutlayApp.Infrastructure.Mapper;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Logging.AddAzureWebAppDiagnostics();
-
 builder.Services.AddControllers().Services
     .AddEndpointsApiExplorer()
     .AddSwaggerGen()
@@ -30,15 +28,10 @@ builder.Services.AddControllers().Services
     .AddAutoMapper()
     .AddMemoryCache();
 
-var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
-logger.LogInformation("App has been started 123");
-logger.LogWarning("App has been started !123");
-
+builder.Logging.AddAzureWebAppDiagnostics();
 builder.Configuration.AddKeyVault(builder.Environment.IsProduction());
 builder.Services.AddOptions<DatabaseOptions>().BindConfiguration(DbConnectionConstants.ConnectionString);
 builder.Services.Configure<MonobankSettings>(x => builder.Configuration.GetSection(MonobankConstants.Name).Bind(x));
-builder.Services.Configure<BrandFetchSettings>(x =>
-    builder.Configuration.GetSection(BrandFetchConstants.Token).Bind(x));
 builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory())
     .ConfigureContainer<ContainerBuilder>(containerBuilder =>
     {

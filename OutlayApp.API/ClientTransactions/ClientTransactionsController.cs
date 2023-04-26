@@ -1,10 +1,5 @@
-using Amazon;
-using Amazon.SecretsManager;
-using Amazon.SecretsManager.Model;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using OutlayApp.API.Options.DatabaseOptions;
 using OutlayApp.Application.ClientTransactions.Commands;
 using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactions;
 using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactionsByDescription;
@@ -18,63 +13,27 @@ namespace OutlayApp.API.ClientTransactions;
 [Route("api/transactions")]
 public class ClientTransactionsController : ControllerBase
 {
-    private readonly ISender _sender;
-    private readonly IOptions<DatabaseOptions> _databaseOptions;
+    private readonly ISender _mediator;
 
-    public ClientTransactionsController(ISender sender, IOptions<DatabaseOptions> databaseOptions)
+    public ClientTransactionsController(ISender mediator)
     {
-        _sender = sender;
-        _databaseOptions = databaseOptions;
+        _mediator = mediator;
     }
-
     
-    
-    
-    [HttpGet("test")]
-    public async Task<IActionResult> Test(CancellationToken cancellationToken)
-    {
-        string secretName = "ApiKey";
-        string region = "us-east-1";
-
-        IAmazonSecretsManager client = new AmazonSecretsManagerClient(RegionEndpoint.GetBySystemName(region));
-
-        GetSecretValueRequest request = new GetSecretValueRequest
-        {
-            SecretId = secretName,
-            VersionStage = "AWSCURRENT", // VersionStage defaults to AWSCURRENT if unspecified.
-        };
-
-        GetSecretValueResponse response;
-
-        try
-        {
-            response = await client.GetSecretValueAsync(request);
-        }
-        catch (Exception e)
-        {
-            // For a list of the exceptions thrown, see
-            // https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
-            throw e;
-        }
-
-        string secret = response.SecretString;
-        return null;
-    }
     [HttpGet("latest")]
     public async Task<IActionResult> FetchLatestTransactions(string externalCardId, CancellationToken cancellationToken)
     {
         var command = new FetchLatestTransactionsCommand(externalCardId);
-        var result = await _sender.Send(command, cancellationToken);
+        var result = await _mediator.Send(command, cancellationToken);
         return result.IsSuccess ? Ok() : BadRequest(result.Error);
     }
-
 
     [HttpGet("by-period")]
     public async Task<IActionResult> GetTransactionsByPeriod(Guid clientCardId, DateTime? dateFrom, DateTime? dateTo,
         CancellationToken cancellationToken)
     {
         var command = new GetClientTransactionsQuery(clientCardId, dateFrom, dateTo);
-        var result = await _sender.Send(command, cancellationToken);
+        var result = await _mediator.Send(command, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
     }
 
@@ -83,7 +42,7 @@ public class ClientTransactionsController : ControllerBase
         CancellationToken cancellationToken)
     {
         var command = new GetClientTransactionsGroupedQuery(clientCardId, dateFrom, dateTo);
-        var result = await _sender.Send(command, cancellationToken);
+        var result = await _mediator.Send(command, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
     }
 
@@ -91,7 +50,7 @@ public class ClientTransactionsController : ControllerBase
     public async Task<IActionResult> GetMostFrequency(Guid clientCardId, CancellationToken cancellationToken)
     {
         var command = new FetchMostFrequencyIconsCommand(null);
-        var result = await _sender.Send(command, cancellationToken);
+        var result = await _mediator.Send(command, cancellationToken);
         return result.IsSuccess ? Ok(result) : BadRequest(result.Error);
     }
 
@@ -100,7 +59,7 @@ public class ClientTransactionsController : ControllerBase
         CancellationToken cancellationToken)
     {
         var command = new GetClientTransactionsByDescriptionQuery(clientCardId, description);
-        var result = await _sender.Send(command, cancellationToken);
+        var result = await _mediator.Send(command, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
     }
 
@@ -108,7 +67,7 @@ public class ClientTransactionsController : ControllerBase
     public async Task<IActionResult> GetWeeklyTransactions(Guid clientCardId, int skipWeeks, CancellationToken cancellationToken)
     {
         var command = new GetClientTransactionsWeeklyQuery(clientCardId, skipWeeks);
-        var result = await _sender.Send(command, cancellationToken);
+        var result = await _mediator.Send(command, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
     }
 }
