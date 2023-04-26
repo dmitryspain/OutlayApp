@@ -22,12 +22,14 @@ public class ClientTransactionConverter : ITypeConverter<GroupedTransaction, Cli
         ClientTransactionsGroupedResponse destination,
         ResolutionContext context)
     {
+        var cat = _inMemoryContext.MccInfos.FirstOrDefault(x => x.Mcc == source.Mcc)!.ShortDescription;
+        var icon = _logoReferenceRepository.GetByName(source.Name, CancellationToken.None).Result?.Url ?? string.Empty;
         return new ClientTransactionsGroupedResponse
         {
             Name = source.Name,
             Amount = source.Amount,
-            Icon = _logoReferenceRepository.GetByName(source.Name, CancellationToken.None).Result.Url,
-            Category = _inMemoryContext.MccInfos.FirstOrDefault(x=>x.Mcc == source.Mcc)!.ShortDescription
+            Icon = icon,
+            Category = cat
         };
     }
 }
