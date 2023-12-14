@@ -25,10 +25,6 @@ public class ClientTransactionConverter : ITypeConverter<GroupedTransaction, Cli
         var cat = _inMemoryContext.MccInfos.FirstOrDefault(x => x.Mcc == source.Mcc)!.ShortDescription;
         var name = source.Name.Replace("Скасування. ", string.Empty);
         var icon = _logoReferenceRepository.GetByName(name, CancellationToken.None).Result?.Url ?? string.Empty;
-        if (string.IsNullOrEmpty(icon))
-        {
-            
-        }
         return new ClientTransactionsGroupedResponse
         {
             Name = source.Name,
