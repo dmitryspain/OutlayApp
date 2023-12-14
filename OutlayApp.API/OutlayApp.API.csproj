@@ -27,7 +27,7 @@
         </PackageReference>
         <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="7.0.1" />
         <PackageReference Include="Microsoft.Extensions.Logging.AzureAppServices" Version="8.0.0-preview.1.23112.2" />
-        <PackageReference Include="Microsoft.NET.Build.Containers" Version="0.3.2" />
+        <PackageReference Include="Microsoft.NET.Build.Containers" Version="8.0.100-rc.1.23462.41" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
     </ItemGroup>

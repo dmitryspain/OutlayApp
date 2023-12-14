@@ -1,37 +1,34 @@
 using AutoMapper;
 using OutlayApp.Application.ClientTransactions;
+using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactions;
 using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactionsGrouped;
+using OutlayApp.Domain.ClientTransactions;
 using OutlayApp.Domain.Repositories;
 using OutlayApp.Infrastructure.Database.InMemoryDb;
-using OutlayApp.Infrastructure.Services.Interfaces;
 
 namespace OutlayApp.Infrastructure.Mapper.TypeConverters;
 
-public class ClientTransactionConverter : ITypeConverter<GroupedTransaction, ClientTransactionsGroupedResponse>
+public class ClientTransactionsRawConverter : ITypeConverter<ClientTransaction, ClientTransactionDto>
 {
     private readonly OutlayInMemoryContext _inMemoryContext;
     private readonly ILogoReferenceRepository _logoReferenceRepository;
 
-    public ClientTransactionConverter(OutlayInMemoryContext inMemoryContext, ILogoReferenceRepository logoReferenceRepository)
+    public ClientTransactionsRawConverter(OutlayInMemoryContext inMemoryContext, ILogoReferenceRepository logoReferenceRepository)
     {
         _inMemoryContext = inMemoryContext;
         _logoReferenceRepository = logoReferenceRepository;
     }
 
-    public ClientTransactionsGroupedResponse Convert(GroupedTransaction source,
-        ClientTransactionsGroupedResponse destination,
+    public ClientTransactionDto Convert(ClientTransaction source,
+        ClientTransactionDto destination,
         ResolutionContext context)
     {
         var cat = _inMemoryContext.MccInfos.FirstOrDefault(x => x.Mcc == source.Mcc)!.ShortDescription;
-        var name = source.Name.Replace("Скасування. ", string.Empty);
-        var icon = _logoReferenceRepository.GetByName(name, CancellationToken.None).Result?.Url ?? string.Empty;
-        if (string.IsNullOrEmpty(icon))
+        var name = source.Description.Replace("Скасування. ", string.Empty);
+        var icon = _logoReferenceRepository.GetByName(source.Description, CancellationToken.None).Result?.Url ?? string.Empty;
+        return new ClientTransactionDto
         {
-            
-        }
-        return new ClientTransactionsGroupedResponse
-        {
-            Name = source.Name,
+            Description = name,
             Amount = source.Amount,
             Icon = icon,
             Category = cat

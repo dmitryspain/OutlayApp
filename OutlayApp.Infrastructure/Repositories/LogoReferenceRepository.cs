@@ -28,7 +28,6 @@ public class LogoReferenceRepository : ILogoReferenceRepository
     public Task<LogoReference> GetByName(string name, CancellationToken cancellationToken = default)
     {
         return _context.LogoReferences.FirstOrDefaultAsync(x => x.Name == name, cancellationToken)!;
-
     }
 
     public Task<bool> ContainsAsync(string name, CancellationToken cancellationToken = default)

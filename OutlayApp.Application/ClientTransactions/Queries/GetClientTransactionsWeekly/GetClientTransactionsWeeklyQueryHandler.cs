@@ -26,7 +26,7 @@ public class GetClientTransactionsWeeklyQueryHandler : IQueryHandler<GetClientTr
         var currDay = DateTimeHelper.ToStandardDayOfWeek(DateTime.Now.DayOfWeek);
         var dayStart = currDay + request.SkipWeeks * daysInWeek;
         
-        var dateStart = DateTime.Now.Date.AddDays(-dayStart); 
+        var dateStart = DateTime.Now.Date.AddDays(-dayStart * request.WeeksCount); 
         var dateEnd = DateTime.Now.Date.AddDays(daysInWeek - dayStart);
         
         var transactions = await _clientTransactionRepository.GetByPeriod(request.ClientCardId,

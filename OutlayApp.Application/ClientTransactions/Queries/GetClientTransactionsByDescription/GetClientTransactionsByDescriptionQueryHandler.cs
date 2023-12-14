@@ -23,7 +23,8 @@ public class GetClientTransactionsByDescriptionQueryHandler : IQueryHandler<GetC
     {
         var transactions = await _clientTransactionRepository
             .GetByDescription(request.ClientCardId, request.Description, cancellationToken);
-        
-        return _mapper.Map<List<ClientTransactionByDescriptionResponse>>(transactions);
+
+        var result = _mapper.Map<List<ClientTransactionByDescriptionResponse>>(transactions);
+        return result;
     }
 }
