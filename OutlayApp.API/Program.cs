@@ -30,10 +30,6 @@ builder.Services.AddControllers().Services
     .AddAutoMapper()
     .AddMemoryCache();
 
-var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
-logger.LogInformation("App has been started 123");
-logger.LogWarning("App has been started !123");
-
 builder.Configuration.AddKeyVault(builder.Environment.IsProduction());
 builder.Services.AddOptions<DatabaseOptions>().BindConfiguration(DbConnectionConstants.ConnectionString);
 builder.Services.Configure<MonobankSettings>(x => builder.Configuration.GetSection(MonobankConstants.Name).Bind(x));

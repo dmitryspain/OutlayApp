@@ -13,6 +13,9 @@ namespace OutlayApp.Application.ClientTransactions.Commands;
 
 public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatestTransactionsCommand>
 {
+    #region Properties
+
+    
     private const int MaxDaysPeriod = 30;
     private const int FirstLogosFetchCount = 10;
     private readonly HttpClient _httpClient;
@@ -21,6 +24,8 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
     private readonly IClientCardsRepository _cardsRepository;
     private readonly IClientTransactionRepository _transactionRepository;
     private readonly IClientRepository _clientRepository;
+
+    #endregion
 
     public FetchLatestTransactionsCommandHandler(IHttpClientFactory factory, IClientCardsRepository cardsRepository,
         IClientTransactionRepository transactionRepository, IClientRepository clientRepository, IUnitOfWork unitOfWork,
@@ -56,20 +61,26 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
         var url = BuildUrl(clientCard.ExternalCardId, unixTimeFrom, unixTimeTo);
         var client = await _clientRepository.GetById(clientCard.ClientId, cancellationToken);
         _httpClient.DefaultRequestHeaders.Add(MonobankConstants.TokenHeader, client.PersonalToken);
-        //todo refactor this
         
         var result = await _httpClient.GetAsync(url, cancellationToken);
         var monobankTransactions = (await result.Content.ReadFromJsonAsync<IEnumerable<MonobankTransaction>>(
             cancellationToken:
             cancellationToken) ?? Array.Empty<MonobankTransaction>()).ToList();
 
-        if (monobankTransactions.Select(transaction => clientCard.AddTransaction(transaction.Description,
-                transaction.Amount.ToDecimal(), transaction.Balance.ToDecimal(),
-                DateTimeOffset.FromUnixTimeSeconds(transaction.Time).DateTime, transaction.Mcc))
-            .Any(transactionResult => transactionResult.IsFailure))
+        foreach (var transaction in monobankTransactions)
         {
-            return Result.Failure(
-                new Error("ClientTransaction.CreationFailed", "Client transaction creation is failed"));
+            var transactionResult = clientCard.AddTransaction(
+                transaction.Description,
+                transaction.Amount.ToDecimal(),
+                transaction.Balance.ToDecimal(),
+                DateTimeOffset.FromUnixTimeSeconds(transaction.Time).DateTime,
+                transaction.Mcc);
+
+            if (transactionResult.IsFailure)
+            {
+                return Result.Failure(
+                    new Error("ClientTransaction.CreationFailed", "Client transaction creation is failed"));
+            }
         }
 
         var mostFrequencyTransactions = monobankTransactions

@@ -21,7 +21,7 @@ public class ClientsController : ControllerBase
     {
         var command = new RegisterClientCommand(clientToken);
         var result = await _sender.Send(command, cancellationToken);
-        return result.IsSuccess ? Ok() : BadRequest(result.Error);
+        return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
     }
 
     [HttpGet("personal-info")]

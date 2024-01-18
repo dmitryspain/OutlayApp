@@ -26,3 +26,5 @@ public class GetClientTransactionsQueryHandler : IQueryHandler<GetClientTransact
         return _mapper.Map<List<ClientTransactionDto>>(transactions);
     }
 }
+
+

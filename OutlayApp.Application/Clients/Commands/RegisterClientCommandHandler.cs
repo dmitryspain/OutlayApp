@@ -8,7 +8,7 @@ using OutlayApp.Domain.Shared;
 
 namespace OutlayApp.Application.Clients.Commands;
 
-public class RegisterClientCommandHandler : ICommandHandler<RegisterClientCommand>
+public class RegisterClientCommandHandler : ICommandHandler<RegisterClientCommand, Guid>
 {
     private readonly IClientRepository _clientRepository;
     private readonly IUnitOfWork _unitOfWork;
@@ -26,11 +26,13 @@ public class RegisterClientCommandHandler : ICommandHandler<RegisterClientComman
         // _httpClient = factory.CreateClient(MonobankConstants.HttpClient);
     }
 
-    public async Task<Result> Handle(RegisterClientCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Guid>> Handle(RegisterClientCommand request, CancellationToken cancellationToken)
     {
         var exist = await _clientRepository.GetByPersonalToken(request.ClientToken, cancellationToken);
         if (exist is not null)
-            return Result.Failure(new Error("Client.AlreadyExists", "Client is already exists"));
+        {
+            return Result.Success(exist.Cards.MaxBy(x => x.Balance)!.Id);
+        }
 
         using var httpClient = new HttpClient();
         httpClient.BaseAddress = new Uri(_monobankSettings.Value.BaseUrl);
@@ -50,6 +52,8 @@ public class RegisterClientCommandHandler : ICommandHandler<RegisterClientComman
 
         await _clientRepository.AddAsync(client, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return Result.Success();
+        
+        var mostUsedCard = client.Cards.MaxBy(x => x.Balance);
+        return Result.Success(mostUsedCard!.Id);
     }
 }

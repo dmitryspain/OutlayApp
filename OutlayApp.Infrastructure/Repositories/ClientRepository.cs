@@ -26,7 +26,8 @@ public class ClientRepository : IClientRepository
 
     public Task<Client> GetByPersonalToken(string token, CancellationToken cancellationToken = default)
     {
-        return _context.Clients.FirstOrDefaultAsync(x => x.PersonalToken == token, cancellationToken)!;
+        return _context.Clients.Include(x => x.Cards)
+            .FirstOrDefaultAsync(x => x.PersonalToken == token, cancellationToken)!;
     }
 
     public Task<Client> GetById(Guid clientId, CancellationToken cancellationToken = default)

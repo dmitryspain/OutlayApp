@@ -22,7 +22,5 @@ public class ClientTransactionsProfile : Profile
 
         CreateMap<ClientTransaction, ClientTransactionDto>()
             .ConvertUsing<ClientTransactionsRawConverter>();
-        // .ForMember(x => x.DateOccured,
-        //     opt => opt.MapFrom(x => DateTimeOffset.FromUnixTimeSeconds(x.DateOccured).LocalDateTime));
     }
 }
