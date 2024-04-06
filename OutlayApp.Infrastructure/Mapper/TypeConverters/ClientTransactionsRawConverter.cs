@@ -1,7 +1,5 @@
 using AutoMapper;
-using OutlayApp.Application.ClientTransactions;
 using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactions;
-using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactionsGrouped;
 using OutlayApp.Domain.ClientTransactions;
 using OutlayApp.Domain.Repositories;
 using OutlayApp.Infrastructure.Database.InMemoryDb;

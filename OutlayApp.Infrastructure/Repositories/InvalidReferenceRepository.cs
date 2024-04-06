@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using OutlayApp.Domain.ClientCards;
 using OutlayApp.Domain.CompanyLogoReferences;
 using OutlayApp.Domain.Repositories;
 using OutlayApp.Infrastructure.Database;

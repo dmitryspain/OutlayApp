@@ -3,7 +3,6 @@ using OutlayApp.Application.ClientTransactions;
 using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactionsGrouped;
 using OutlayApp.Domain.Repositories;
 using OutlayApp.Infrastructure.Database.InMemoryDb;
-using OutlayApp.Infrastructure.Services.Interfaces;
 
 namespace OutlayApp.Infrastructure.Mapper.TypeConverters;
 

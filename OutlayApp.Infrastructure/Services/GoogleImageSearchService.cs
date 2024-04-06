@@ -1,10 +1,7 @@
-using System.Diagnostics;
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
 using OutlayApp.Application.Configuration.Google;
-using OutlayApp.Infrastructure.Services.Extensions;
 using OutlayApp.Infrastructure.Services.Interfaces;
 
 namespace OutlayApp.Infrastructure.Services;

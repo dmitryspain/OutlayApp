@@ -1,7 +1,6 @@
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using OutlayApp.API.Options.DatabaseOptions;
-using OutlayApp.Application.Configuration.BrandFetch;
 using OutlayApp.Application.Configuration.Database;
 using OutlayApp.Application.Configuration.Monobank;
 using OutlayApp.Infrastructure.BackgroundJobs;

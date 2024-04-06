@@ -1,13 +1,10 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using OutlayApp.API.Options.DatabaseOptions;
 using OutlayApp.Application.ClientTransactions.Commands;
 using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactions;
 using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactionsByDescription;
 using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactionsGrouped;
 using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactionsWeekly;
-using OutlayApp.Application.LogoReferences;
 
 namespace OutlayApp.API.ClientTransactions;
 
@@ -46,14 +43,6 @@ public class ClientTransactionsController : ControllerBase
         var command = new GetClientTransactionsGroupedQuery(clientCardId, dateFrom, dateTo);
         var result = await _mediator.Send(command, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
-    }
-
-    [HttpGet("most-freq")]
-    public async Task<IActionResult> GetMostFrequency(Guid clientCardId, CancellationToken cancellationToken)
-    {
-        var command = new FetchMostFrequencyIconsCommand(null);
-        var result = await _mediator.Send(command, cancellationToken);
-        return result.IsSuccess ? Ok(result) : BadRequest(result.Error);
     }
 
     [HttpGet("by-description")]

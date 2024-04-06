@@ -1,5 +1,4 @@
 using OutlayApp.Application.Abstractions.Messaging;
-using OutlayApp.Domain.Shared;
 
 namespace OutlayApp.Application.Clients.Commands;
 

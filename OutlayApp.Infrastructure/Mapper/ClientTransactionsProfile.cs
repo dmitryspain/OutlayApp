@@ -1,4 +1,3 @@
-using System.Globalization;
 using AutoMapper;
 using OutlayApp.Application.ClientTransactions;
 using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactions;

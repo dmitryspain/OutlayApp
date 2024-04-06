@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using OutlayApp.Domain.ClientTransactions;
 using OutlayApp.Domain.CompanyLogoReferences;
 
 namespace OutlayApp.Infrastructure.Database.EntityConfigurations;

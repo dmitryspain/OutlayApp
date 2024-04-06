@@ -1,5 +1,4 @@
 using System.Net.Http.Json;
-using System.Transactions;
 using MediatR;
 using OutlayApp.Application.Abstractions.Messaging;
 using OutlayApp.Application.Configuration.Extensions;
