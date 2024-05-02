@@ -40,10 +40,10 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
 
     public async Task<Result> Handle(FetchLatestTransactionsCommand request, CancellationToken cancellationToken)
     {
-        var clientCard = await _cardsRepository.GetByExternalId(request.ExternalCardId, cancellationToken);
+        var clientCard = await _cardsRepository.GetById(request.CardId, cancellationToken);
         if (clientCard is null)
             return Result.Failure(new Error("ClientCard.NotFound",
-                $"No client card with External Id {request.ExternalCardId}"));
+                $"No client card with External Id {request.CardId}"));
 
         long unixTimeFrom;
         var latest = await _transactionRepository.GetLatest(clientCard.Id, cancellationToken);

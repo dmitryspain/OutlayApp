@@ -53,7 +53,8 @@ public class RegisterClientCommandHandler : ICommandHandler<RegisterClientComman
         await _clientRepository.AddAsync(client, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         
-        var mostUsedCard = client.Cards.MaxBy(x => x.Balance);
+        var cardWithMaxBalance = client.Cards.MaxBy(x => x.Balance);
+        var mostUsedCard = cardWithMaxBalance!.Balance == 0 ? client.Cards.MinBy(x => x.Balance) : cardWithMaxBalance;
         return Result.Success(mostUsedCard!.Id);
     }
 }

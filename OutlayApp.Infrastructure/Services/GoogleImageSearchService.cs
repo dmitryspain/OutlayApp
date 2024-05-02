@@ -17,16 +17,7 @@ public class GoogleImageSearchService : IGoogleImageSearchService
 
     public async Task<string> GetCompanyLogo(string logoName, CancellationToken cancellationToken)
     {
-        // // todo should be optimized
-        // if (mcc == 4829) //5499 - продукты
-        //                  //4215 - курьерська служба
-        //                  //4121 - такси
-        //                  //7997 - розваги та спорт
-        //                  //5814 - fastfood
-        //                  //4814 - мобильный звязок
-        //                  //5815 - цифрові товари (прилаги)
-        //     return string.Empty;
-        
+        //todo maybe could be optimized, use array of logo names and check only once
         var key = _configuration[GoogleConstants.Key];
         var engineId = _configuration[GoogleConstants.EngineId];
 

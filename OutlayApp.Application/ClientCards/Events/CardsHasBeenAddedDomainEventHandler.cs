@@ -19,10 +19,10 @@ internal sealed class CardsHasBeenAddedDomainEventHandler : INotificationHandler
     public async Task Handle(CardsHasBeenAddedEvent notification, CancellationToken cancellationToken)
     {
         var clientCard = await _clientCardsRepository.GetById(notification.ClientCardId, cancellationToken);
-        if (clientCard == null || clientCard.Balance == 0)
+        if (clientCard == null)
             return; 
         
-        await _sender.Send(new FetchLatestTransactionsCommand(clientCard.ExternalCardId),
+        await _sender.Send(new FetchLatestTransactionsCommand(clientCard.Id),
             cancellationToken);
     }
 }

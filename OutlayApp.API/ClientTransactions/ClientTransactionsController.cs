@@ -20,9 +20,9 @@ public class ClientTransactionsController : ControllerBase
     }
     
     [HttpGet("latest")]
-    public async Task<IActionResult> FetchLatestTransactions(string externalCardId, CancellationToken cancellationToken)
+    public async Task<IActionResult> FetchLatestTransactions(Guid cardId, CancellationToken cancellationToken)
     {
-        var command = new FetchLatestTransactionsCommand(externalCardId);
+        var command = new FetchLatestTransactionsCommand(cardId);
         var result = await _mediator.Send(command, cancellationToken);
         return result.IsSuccess ? Ok() : BadRequest(result.Error);
     }
