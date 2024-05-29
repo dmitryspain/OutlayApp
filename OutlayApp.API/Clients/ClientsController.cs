@@ -1,5 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Npgsql.Internal.TypeHandlers.FullTextSearchHandlers;
+using OutlayApp.Application.ChooseClientCards.Commands;
 using OutlayApp.Application.Clients.Commands;
 using OutlayApp.Application.Clients.Queries.GetClientInfo;
 
@@ -23,7 +25,14 @@ public class ClientsController : ControllerBase
         var result = await _sender.Send(command, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
     }
-
+    [HttpPost("cards")]
+    public async Task<IActionResult> GetCards(string clientToken)
+    {
+        var command = new ChooseClientCardsCommand(clientToken);
+        var result = await _sender.Send(command);
+        return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
+    }
+     
     [HttpGet("personal-info")]
     public async Task<IActionResult> GetClientInfo(Guid clientId, CancellationToken cancellationToken)
     {

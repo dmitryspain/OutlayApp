@@ -31,7 +31,7 @@ public class RegisterClientCommandHandler : ICommandHandler<RegisterClientComman
         var exist = await _clientRepository.GetByPersonalToken(request.ClientToken, cancellationToken);
         if (exist is not null)
         {
-            return Result.Success(exist.Cards.MaxBy(x => x.Balance)!.Id);
+            return Result.Success(exist.Cards.MaxBy(x => x.Balance)!.Id);//TODO make a card selection
         }
 
         using var httpClient = new HttpClient();
