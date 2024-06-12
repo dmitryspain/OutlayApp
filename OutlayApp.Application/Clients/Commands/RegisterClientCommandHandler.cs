@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using Microsoft.Extensions.Options;
 using OutlayApp.Application.Abstractions.Messaging;
+using OutlayApp.Application.ClientCards.Command;
 using OutlayApp.Application.Configuration.Monobank;
 using OutlayApp.Domain.Clients;
 using OutlayApp.Domain.Repositories;
@@ -14,7 +15,7 @@ public class RegisterClientCommandHandler : ICommandHandler<RegisterClientComman
     private readonly IUnitOfWork _unitOfWork;
 
     private readonly IOptions<MonobankSettings> _monobankSettings;
-    // private readonly HttpClient _httpClient;
+
 
     public RegisterClientCommandHandler(IClientRepository clientRepository,
         IUnitOfWork unitOfWork, IOptions<MonobankSettings> monobankSettings)
@@ -22,8 +23,6 @@ public class RegisterClientCommandHandler : ICommandHandler<RegisterClientComman
         _clientRepository = clientRepository;
         _unitOfWork = unitOfWork;
         _monobankSettings = monobankSettings;
-
-        // _httpClient = factory.CreateClient(MonobankConstants.HttpClient);
     }
 
     public async Task<Result<Guid>> Handle(RegisterClientCommand request, CancellationToken cancellationToken)

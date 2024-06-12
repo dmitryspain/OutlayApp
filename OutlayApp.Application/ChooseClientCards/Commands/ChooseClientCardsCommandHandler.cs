@@ -23,7 +23,8 @@ namespace OutlayApp.Application.ChooseClientCards.Commands
         }
         public async Task<Result<List<ClientCardDto>>> Handle(ChooseClientCardsCommand request, CancellationToken cancellationToken)
         {
-            var client = await _clientRepository.GetByPersonalToken(request.clientToken);
+            var client = await _clientRepository.GetByPersonalToken(request.ClientToken,cancellationToken);
+            
             List<ClientCardDto> clientCards = _mapper.Map<List<ClientCardDto>>(client.Cards);
 
             return Result.Success(clientCards);

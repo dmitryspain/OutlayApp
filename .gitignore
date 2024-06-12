@@ -4,3 +4,5 @@ obj/
 riderModule.iml
 /_ReSharper.Caches/
 .vs/
+OutlayApp.API/appsettings.json
+OutlayApp.API/appsettings.Development.json

@@ -16,7 +16,7 @@ public sealed class Client : Entity, IAggregateRoot
     private Client() : base(Guid.NewGuid())
     {
     }
-
+   
     private Client(Guid id, string name, string personalToken)
         : base(id)
     {
@@ -41,5 +41,9 @@ public sealed class Client : Entity, IAggregateRoot
     public static Client Create(string name, string personalToken)
     {
         return new Client(Guid.NewGuid(), name, personalToken);
+    }
+    public void UpdateBalance (ClientCard card,decimal newBalance) 
+    {
+        card.UpdateBalance(newBalance);
     }
 }

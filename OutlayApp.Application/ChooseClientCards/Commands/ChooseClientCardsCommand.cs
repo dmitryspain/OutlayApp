@@ -10,5 +10,5 @@ using System.Threading.Tasks;
 
 namespace OutlayApp.Application.ChooseClientCards.Commands
 {
-    public sealed record class ChooseClientCardsCommand(string clientToken) : ICommand<List<ClientCardDto>>;
+    public sealed record class ChooseClientCardsCommand(string ClientToken) : ICommand<List<ClientCardDto>>;
 }

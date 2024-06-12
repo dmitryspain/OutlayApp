@@ -39,4 +39,9 @@ public class ClientCard : Entity, IAggregateRoot
        _transactions.Add(transaction);
         return transaction;
     }
+    public  void UpdateBalance(decimal newBalance)
+    { 
+        Balance = newBalance;
+        
+    }
 }
