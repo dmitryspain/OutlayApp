@@ -42,7 +42,7 @@ namespace OutlayApp.Application.ClientCards.Command
             foreach (var item in exist.Cards)
             {
                 var newBalance = clientInfo.Accounts.Where(x => x.Id == item.ExternalCardId).Select(x => x.Balance).FirstOrDefault();
-                exist.UpdateBalance(item, newBalance);
+                item.UpdateBalance(newBalance);
                 await _unitOfWork.SaveChangesAsync();
             }
             return Result.Success();

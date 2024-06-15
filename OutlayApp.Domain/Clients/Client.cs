@@ -42,8 +42,4 @@ public sealed class Client : Entity, IAggregateRoot
     {
         return new Client(Guid.NewGuid(), name, personalToken);
     }
-    public void UpdateBalance (ClientCard card,decimal newBalance) 
-    {
-        card.UpdateBalance(newBalance);
-    }
 }
