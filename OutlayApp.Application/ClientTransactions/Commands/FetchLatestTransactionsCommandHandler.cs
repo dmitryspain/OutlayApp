@@ -63,8 +63,7 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
 
         var result = await _httpClient.GetAsync(url, cancellationToken);
         var monobankTransactions = (await result.Content.ReadFromJsonAsync<IEnumerable<MonobankTransaction>>(
-            cancellationToken:
-            cancellationToken) ?? Array.Empty<MonobankTransaction>()).ToList();
+            cancellationToken: cancellationToken) ?? Array.Empty<MonobankTransaction>()).ToList();
 
         foreach (var transaction in monobankTransactions)
         {
@@ -83,7 +82,7 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
         }
 
         var mostFrequencyTransactions = monobankTransactions
-            .Where(x => x.Mcc != 4829) // todo find good way to solve this
+            .Where(x => x.Mcc != MccsConstants.MoneyTransfer) 
             .GroupBy(x => x.Description)
             .OrderByDescending(x => x.Count())
             .Take(FirstLogosFetchCount)
