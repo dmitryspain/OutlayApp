@@ -8,7 +8,6 @@ namespace OutlayApp.Domain.Clients;
 public sealed class Client : Entity, IAggregateRoot
 {
     public string Name { get; private set; } 
-
     public string PersonalToken { get; private set; }
 
     private readonly List<ClientCard> _cards = new();
@@ -17,7 +16,7 @@ public sealed class Client : Entity, IAggregateRoot
     private Client() : base(Guid.NewGuid())
     {
     }
-
+   
     private Client(Guid id, string name, string personalToken)
         : base(id)
     {

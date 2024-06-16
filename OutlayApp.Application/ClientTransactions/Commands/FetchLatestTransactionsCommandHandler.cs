@@ -14,7 +14,7 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
 {
     #region Properties
 
-    
+
     private const int MaxDaysPeriod = 30;
     private const int FirstLogosFetchCount = 10;
     private readonly HttpClient _httpClient;
@@ -60,7 +60,7 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
         var url = BuildUrl(clientCard.ExternalCardId, unixTimeFrom, unixTimeTo);
         var client = await _clientRepository.GetById(clientCard.ClientId, cancellationToken);
         _httpClient.DefaultRequestHeaders.Add(MonobankConstants.TokenHeader, client.PersonalToken);
-        
+
         var result = await _httpClient.GetAsync(url, cancellationToken);
         var monobankTransactions = (await result.Content.ReadFromJsonAsync<IEnumerable<MonobankTransaction>>(
             cancellationToken:
@@ -79,6 +79,14 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
             {
                 return Result.Failure(
                     new Error("ClientTransaction.CreationFailed", "Client transaction creation is failed"));
+            }
+        }
+        if (latest != null)
+        {
+            var lastOperation = clientCard.Transactions.FirstOrDefault();//checking that the last transaction is not re-added (on 105 line)
+            if (latest.BalanceAfter == lastOperation.BalanceAfter && latest.DateOccured == lastOperation.DateOccured && latest.Amount == lastOperation.Amount)
+            {
+                return Result.Success();
             }
         }
 

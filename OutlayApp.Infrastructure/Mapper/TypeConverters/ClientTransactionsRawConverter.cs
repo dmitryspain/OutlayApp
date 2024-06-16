@@ -29,6 +29,7 @@ public class ClientTransactionsRawConverter : ITypeConverter<ClientTransaction, 
             Description = name,
             Amount = source.Amount,
             Icon = icon,
+            DateOccured = source.DateOccured,
             Category = cat
         };
     }

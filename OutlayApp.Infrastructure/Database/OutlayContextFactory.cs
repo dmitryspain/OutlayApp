@@ -22,7 +22,7 @@ public class OutlayContextFactory : IDesignTimeDbContextFactory<OutlayContext>
         //     .Build();
         
         var dbContextOptionsBuilder = new DbContextOptionsBuilder<OutlayContext>();
-        // dbContextOptionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=outlayappapi_db_1;Username=postgres;Password=postgres");
+       // dbContextOptionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=outlayappapi_db_1;Username=postgres;Password=postgres");
         dbContextOptionsBuilder.UseNpgsql(configuration[DbConnectionConstants.ConnectionString]);
         return new OutlayContext(dbContextOptionsBuilder.Options);
     }
