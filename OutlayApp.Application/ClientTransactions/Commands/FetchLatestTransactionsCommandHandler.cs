@@ -72,21 +72,13 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
                 transaction.Description,
                 transaction.Amount.ToDecimal(),
                 transaction.Balance.ToDecimal(),
-                DateTimeOffset.FromUnixTimeSeconds(transaction.Time).DateTime,
+                DateTimeOffset.FromUnixTimeSeconds(transaction.Time).LocalDateTime,
                 transaction.Mcc);
 
             if (transactionResult.IsFailure)
             {
                 return Result.Failure(
                     new Error("ClientTransaction.CreationFailed", "Client transaction creation is failed"));
-            }
-        }
-        if (latest != null)
-        {
-            var lastOperation = clientCard.Transactions.FirstOrDefault();//checking that the last transaction is not re-added (on 105 line)
-            if (latest.BalanceAfter == lastOperation.BalanceAfter && latest.DateOccured == lastOperation.DateOccured && latest.Amount == lastOperation.Amount)
-            {
-                return Result.Success();
             }
         }
 
@@ -97,15 +89,12 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
             .Take(FirstLogosFetchCount)
             .Select(x => x.Key);
 
-        // using var transaction = _unitOfWork.BeginTransaction();
-
         var freqLogosCommand = new FetchMostFrequencyIconsCommand(mostFrequencyTransactions);
+        
         await _sender.Send(freqLogosCommand, cancellationToken);
-
         await _transactionRepository.AddRange(clientCard.Transactions, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        // transaction.Commit();
+        
         return Result.Success();
     }
 
