@@ -23,12 +23,13 @@ public class GetClientTransactionsWeeklyQueryHandler : IQueryHandler<GetClientTr
         CancellationToken cancellationToken)
     {
         const int daysInWeek = 7;
-        var currDay = DateTimeHelper.ToStandardDayOfWeek(DateTime.Now.DayOfWeek);
-        var dayStart = currDay + request.SkipWeeks * daysInWeek;
-        
-        var dateStart = DateTime.Now.Date.AddDays(-dayStart * request.WeeksCount); 
-        var dateEnd = DateTime.Now.Date.AddDays(daysInWeek - dayStart);
-        
+        var currDay = (int)DateTime.Now.DayOfWeek;
+        var dayStart = daysInWeek * request.SkipWeeks;
+
+        // Calculate the starting and ending dates for the 7-day period
+        var dateStart = DateTime.Now.Date.AddDays(-currDay).AddDays(-dayStart);
+        var dateEnd = dateStart.AddDays(daysInWeek);
+
         var transactions = await _clientTransactionRepository.GetByPeriod(request.ClientCardId,
             dateStart, dateEnd, cancellationToken);
 

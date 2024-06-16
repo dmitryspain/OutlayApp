@@ -57,7 +57,7 @@ public class ClientTransactionsController : ControllerBase
     [HttpGet("weekly")]
     public async Task<IActionResult> GetWeeklyTransactions(Guid clientCardId, int weeksCount, int skipWeeks, CancellationToken cancellationToken)
     {
-        var command = new GetClientTransactionsWeeklyQuery(clientCardId, skipWeeks);
+        var command = new GetClientTransactionsWeeklyQuery(clientCardId, weeksCount, skipWeeks);
         var result = await _mediator.Send(command, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
     }
