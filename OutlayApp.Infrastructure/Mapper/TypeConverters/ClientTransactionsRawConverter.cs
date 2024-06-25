@@ -23,7 +23,7 @@ public class ClientTransactionsRawConverter : ITypeConverter<ClientTransaction, 
     {
         var cat = _inMemoryContext.MccInfos.FirstOrDefault(x => x.Mcc == source.Mcc)!.ShortDescription;
         var name = source.Description.Replace("Скасування. ", string.Empty);
-        var icon = _logoReferenceRepository.GetByName(source.Description, CancellationToken.None).Result?.Url ?? string.Empty;
+        var icon = _logoReferenceRepository.GetByName(name, CancellationToken.None).Result?.Url ?? string.Empty;
         return new ClientTransactionDto
         {
             Description = name,
