@@ -2,7 +2,8 @@ namespace OutlayApp.Application.ClientTransactions.Queries.GetClientTransactions
 
 public class ClientTransactionByDescriptionResponse
 {
-    public string Name { get; set; }
-    public string DateOccured { get; set; }
+    public string Name { get; set; } = string.Empty;
+    /// <summary>Kyiv time, formatted.</summary>
+    public string DateOccured { get; set; } = string.Empty;
     public decimal Amount { get; set; }
 }

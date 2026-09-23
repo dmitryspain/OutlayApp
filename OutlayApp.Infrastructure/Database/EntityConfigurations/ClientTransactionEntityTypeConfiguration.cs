@@ -9,11 +9,12 @@ internal sealed class ClientTransactionEntityTypeConfiguration : IEntityTypeConf
     public void Configure(EntityTypeBuilder<ClientTransaction> builder)
     {
         builder.HasKey(x => x.Id);
-        // every query filters by card; the filtered index below cannot serve that
-        builder.HasIndex(x => x.ClientCardId);
+        // every query filters by card and period
+        builder.HasIndex(x => new { x.ClientCardId, x.DateOccured });
         // webhook, polling and history backfill can all deliver the same item
         builder.HasIndex(x => new { x.ClientCardId, x.ExternalId })
             .IsUnique()
             .HasFilter("\"ExternalId\" IS NOT NULL");
+        builder.Property(x => x.Cashback).HasPrecision(18, 2);
     }
 }

@@ -17,9 +17,12 @@ public interface ILiveSubscription : IDisposable
     ChannelReader<LiveEvent> Reader { get; }
 }
 
-/// <summary>In-process fan-out of <see cref="LiveEvent"/>s to the listeners of a card (streamed to the UI as SSE).</summary>
+/// <summary>
+/// Fan-out of <see cref="LiveEvent"/>s to the listeners of a card (streamed to the UI as SSE).
+/// Delivered to listeners on every server instance.
+/// </summary>
 public interface ILiveEvents
 {
-    void Publish(Guid cardId, LiveEvent liveEvent);
+    Task Publish(Guid cardId, LiveEvent liveEvent);
     ILiveSubscription Subscribe(Guid cardId);
 }

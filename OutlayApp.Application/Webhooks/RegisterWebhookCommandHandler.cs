@@ -1,7 +1,8 @@
-using System.Net.Http.Json;
 using Microsoft.Extensions.Options;
 using OutlayApp.Application.Abstractions.Messaging;
 using OutlayApp.Application.Configuration.Monobank;
+using OutlayApp.Application.Monobank;
+using OutlayApp.Application.Security;
 using OutlayApp.Domain.Repositories;
 using OutlayApp.Domain.Shared;
 
@@ -11,15 +12,17 @@ public class RegisterWebhookCommandHandler : ICommandHandler<RegisterWebhookComm
 {
     private readonly IClientRepository _clientRepository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly HttpClient _httpClient;
+    private readonly IMonobankClient _monobank;
+    private readonly ITokenProtector _protector;
     private readonly MonobankSettings _settings;
 
     public RegisterWebhookCommandHandler(IClientRepository clientRepository, IUnitOfWork unitOfWork,
-        IHttpClientFactory factory, IOptions<MonobankSettings> settings)
+        IMonobankClient monobank, ITokenProtector protector, IOptions<MonobankSettings> settings)
     {
         _clientRepository = clientRepository;
         _unitOfWork = unitOfWork;
-        _httpClient = factory.CreateClient(MonobankConstants.HttpClient);
+        _monobank = monobank;
+        _protector = protector;
         _settings = settings.Value;
     }
 
@@ -28,24 +31,20 @@ public class RegisterWebhookCommandHandler : ICommandHandler<RegisterWebhookComm
         var url = WebhookUrl.Build(_settings);
         if (url is null)
             return Result.Failure<string>(new Error("Webhook.NotConfigured",
-                "Webhooks are not configured on the server (Monobank:WebhookBaseUrl / WebhookSecret)."));
+                "На сервері не налаштовано публічну адресу для webhook (Monobank:WebhookBaseUrl / WebhookSecret)."));
 
-        var client = await _clientRepository.GetByPersonalToken(request.ClientToken, cancellationToken);
-        if (client is null)
-            return Result.Failure<string>(new Error("Client.NotFound", "Connect the token first."));
+        var client = await _clientRepository.GetById(request.ClientId, cancellationToken);
+        if (client?.EncryptedToken is null)
+            return Result.Failure<string>(new Error("Client.NotFound", "Клієнта не знайдено."));
 
         // Monobank calls the URL (GET) before accepting it, so it must already be reachable
-        using var message = new HttpRequestMessage(HttpMethod.Post, "/personal/webhook")
+        try
         {
-            Content = JsonContent.Create(new { webHookUrl = url })
-        };
-        message.Headers.Add(MonobankConstants.TokenHeader, request.ClientToken);
-        using var response = await _httpClient.SendAsync(message, cancellationToken);
-        if (!response.IsSuccessStatusCode)
+            await _monobank.SetWebhook(_protector.Unprotect(client.EncryptedToken), url, cancellationToken);
+        }
+        catch (MonobankException ex)
         {
-            var body = await response.Content.ReadAsStringAsync(cancellationToken);
-            return Result.Failure<string>(new Error("Webhook.Rejected",
-                $"Monobank refused the webhook ({(int)response.StatusCode}): {body}"));
+            return Result.Failure<string>(MonobankErrors.From(ex));
         }
 
         client.SetWebhook(url);

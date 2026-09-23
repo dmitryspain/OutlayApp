@@ -1,11 +1,16 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OutlayApp.Application.Live;
 
 namespace OutlayApp.API.Events;
 
-/// <summary>Server-sent events for one card: new transactions (from the webhook) and backfill progress.</summary>
+/// <summary>
+/// Server-sent events for one of the client's cards: new transactions (from the webhook) and history progress.
+/// EventSource cannot send headers, so the session token comes as ?access_token=.
+/// </summary>
 [ApiController]
+[Authorize]
 [Route("api/events")]
 public class EventsController : ControllerBase
 {

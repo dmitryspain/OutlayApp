@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using OutlayApp.Application.Configuration.Monobank;
@@ -10,6 +11,7 @@ namespace OutlayApp.API.Webhooks;
 
 /// <summary>Monobank's push endpoint. The secret path segment keeps anyone else from posting fake transactions.</summary>
 [ApiController]
+[AllowAnonymous]
 [Route(WebhookUrl.Route)]
 public class WebhooksController : ControllerBase
 {

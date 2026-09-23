@@ -1,5 +1,5 @@
-using AutoMapper;
 using OutlayApp.Application.Abstractions.Messaging;
+using OutlayApp.Application.Time;
 using OutlayApp.Domain.Repositories;
 using OutlayApp.Domain.Shared;
 
@@ -9,22 +9,24 @@ public class GetClientTransactionsByDescriptionQueryHandler : IQueryHandler<GetC
     List<ClientTransactionByDescriptionResponse>>
 {
     private readonly IClientTransactionRepository _clientTransactionRepository;
-    private readonly IMapper _mapper;
 
-    public GetClientTransactionsByDescriptionQueryHandler(IClientTransactionRepository clientTransactionRepository,
-        IMapper mapper)
+    public GetClientTransactionsByDescriptionQueryHandler(IClientTransactionRepository clientTransactionRepository)
     {
         _clientTransactionRepository = clientTransactionRepository;
-        _mapper = mapper;
     }
 
     public async Task<Result<List<ClientTransactionByDescriptionResponse>>> Handle(GetClientTransactionsByDescriptionQuery request,
         CancellationToken cancellationToken)
     {
+        var (from, to) = TransactionsPeriodHelper.Resolve(request.DateFrom, request.DateTo);
         var transactions = await _clientTransactionRepository
-            .GetByDescription(request.ClientCardId, request.Description, request.DateFrom, request.DateTo, cancellationToken);
+            .GetByDescription(request.ClientCardId, request.Description, from, to, cancellationToken);
 
-        var result = _mapper.Map<List<ClientTransactionByDescriptionResponse>>(transactions);
-        return result;
+        return transactions.Select(x => new ClientTransactionByDescriptionResponse
+        {
+            Name = x.Description,
+            DateOccured = $"{KyivTime.FromUtc(x.DateOccured):g}",
+            Amount = x.Amount,
+        }).ToList();
     }
 }

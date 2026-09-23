@@ -14,23 +14,27 @@ public class LogoReferenceRepository : ILogoReferenceRepository
         _context = context;
     }
 
-    public Task AddAsync(LogoReference logoReference, CancellationToken cancellationToken = default)
+    public Task AddAsync(LogoReference logoReference, CancellationToken cancellationToken = default) =>
+        _context.AddAsync(logoReference, cancellationToken).AsTask();
+
+    public Task<LogoReference?> GetById(Guid id, CancellationToken cancellationToken = default) =>
+        _context.LogoReferences.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+    public Task<LogoReference?> GetByName(string name, CancellationToken cancellationToken = default) =>
+        _context.LogoReferences.FirstOrDefaultAsync(x => x.Name == name, cancellationToken);
+
+    public async Task<Dictionary<string, string>> GetUrlsByNames(IReadOnlyCollection<string> names,
+        CancellationToken cancellationToken = default)
     {
-        return _context.AddAsync(logoReference, cancellationToken).AsTask();
+        if (names.Count == 0)
+            return new Dictionary<string, string>();
+        var rows = await _context.LogoReferences.AsNoTracking()
+            .Where(x => names.Contains(x.Name))
+            .Select(x => new { x.Name, x.Url })
+            .ToListAsync(cancellationToken);
+        return rows.GroupBy(x => x.Name).ToDictionary(g => g.Key, g => g.First().Url);
     }
 
-    public Task<LogoReference> GetById(Guid id, CancellationToken cancellationToken = default)
-    {
-        return _context.LogoReferences.FirstOrDefaultAsync(x => x.Id == id, cancellationToken)!;
-    }
-
-    public Task<LogoReference> GetByName(string name, CancellationToken cancellationToken = default)
-    {
-        return _context.LogoReferences.FirstOrDefaultAsync(x => x.Name == name, cancellationToken)!;
-    }
-
-    public Task<bool> ContainsAsync(string name, CancellationToken cancellationToken = default)
-    {
-        return _context.LogoReferences.Select(x => x.Name).ContainsAsync(name, cancellationToken);
-    }
+    public Task<bool> ContainsAsync(string name, CancellationToken cancellationToken = default) =>
+        _context.LogoReferences.AnyAsync(x => x.Name == name, cancellationToken);
 }

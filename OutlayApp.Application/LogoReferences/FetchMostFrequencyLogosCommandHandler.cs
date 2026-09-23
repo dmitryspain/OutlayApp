@@ -35,14 +35,16 @@ public class FetchMostFrequencyIconsCommandHandler : ICommandHandler<FetchMostFr
             if (Regex.IsMatch(transaction, pattern))
                 continue;
             var logo = await _logoFinder.GetCompanyLogo(transaction, cancellationToken);
-            if (!string.IsNullOrEmpty(logo))
+            if (logo is null)
+                break; // the search itself is unavailable now; try these again next time
+            if (logo.Length > 0)
             {
-                var reference = LogoReference.Create(transaction, logo, DateTime.Now);
+                var reference = LogoReference.Create(transaction, logo, DateTime.UtcNow);
                 await _logoReferenceRepository.AddAsync(reference, cancellationToken);
             }
             else
             {
-                var invalidReference = InvalidReference.Create(transaction, DateTime.Now);
+                var invalidReference = InvalidReference.Create(transaction, DateTime.UtcNow);
                 await _invalidReferenceRepository.AddAsync(invalidReference, cancellationToken);
             }
         }

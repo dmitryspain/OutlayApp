@@ -1,11 +1,6 @@
-﻿using OutlayApp.Application.Abstractions.Messaging;
-using OutlayApp.Application.Clients.Commands;
-using OutlayApp.Domain.ClientCards;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using OutlayApp.Application.Abstractions.Messaging;
 
 namespace OutlayApp.Application.ClientCards.Command;
-public sealed record class UpdateBalanceCommand(string ClientToken) : ICommand;
+
+/// <summary>Refreshes balances (and new accounts) of a client from /personal/client-info.</summary>
+public record UpdateBalanceCommand(Guid ClientId) : ICommand;

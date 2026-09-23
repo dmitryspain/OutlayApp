@@ -1,6 +1,8 @@
 using Autofac;
+using OutlayApp.Application.ClientTransactions;
 using OutlayApp.Application.LogoReferences;
 using OutlayApp.Application.Transactions;
+using OutlayApp.Infrastructure.Mcc;
 using OutlayApp.Infrastructure.Services;
 
 namespace OutlayApp.Infrastructure.Processing;
@@ -15,6 +17,14 @@ public class ServicesModule : Module
 
         builder.RegisterType<StatementImporter>()
             .AsSelf()
+            .InstancePerLifetimeScope();
+
+        builder.RegisterType<MccDirectory>()
+            .AsSelf()
+            .SingleInstance();
+
+        builder.RegisterType<TransactionEnricher>()
+            .As<ITransactionEnricher>()
             .InstancePerLifetimeScope();
     }
 }

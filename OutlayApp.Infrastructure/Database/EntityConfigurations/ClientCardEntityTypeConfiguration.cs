@@ -9,5 +9,8 @@ internal sealed class ClientCardEntityTypeConfiguration : IEntityTypeConfigurati
     public void Configure(EntityTypeBuilder<ClientCard> builder)
     {
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.Balance).HasPrecision(18, 2);
+        builder.Property(x => x.CreditLimit).HasPrecision(18, 2);
+        builder.HasIndex(x => x.ExternalCardId);
     }
 }

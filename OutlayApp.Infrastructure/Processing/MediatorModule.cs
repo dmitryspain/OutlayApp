@@ -1,6 +1,7 @@
 using System.Reflection;
 using Autofac;
 using MediatR;
+using MediatR.NotificationPublishers;
 using Module = Autofac.Module;
 
 namespace OutlayApp.Infrastructure.Processing;
@@ -9,7 +10,12 @@ public class MediatorModule : Module
 {
     protected override void Load(ContainerBuilder builder)
     {
-        builder.RegisterAssemblyTypes(typeof(IMediator).GetTypeInfo().Assembly).AsImplementedInterfaces();
+        // MediatR 12 resolves handlers through IServiceProvider (Autofac supplies it); notifications run one by one
+        builder.RegisterType<ForeachAwaitPublisher>().As<INotificationPublisher>().SingleInstance();
+        builder.RegisterType<Mediator>()
+            .As<IMediator>().As<ISender>().As<IPublisher>()
+            .UsingConstructor(typeof(IServiceProvider), typeof(INotificationPublisher))
+            .InstancePerLifetimeScope();
 
         var mediatrOpenTypes = new[]
         {
@@ -25,12 +31,5 @@ public class MediatorModule : Module
                 .FindConstructorsWith(new AllConstructorFinder())
                 .AsImplementedInterfaces();
         }
-
-        builder.Register<ServiceFactory>(ctx =>
-        {
-            var c = ctx.Resolve<IComponentContext>();
-            return t => c.Resolve(t);
-        });
-
     }
 }

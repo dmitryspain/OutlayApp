@@ -1,28 +1,26 @@
 using MediatR;
+using OutlayApp.Application.Abstractions;
 using OutlayApp.Application.ClientTransactions.Commands;
+using OutlayApp.Application.Monobank;
 using OutlayApp.Domain.Clients.Events;
-using OutlayApp.Domain.Repositories;
 
 namespace OutlayApp.Application.ClientCards.Events;
 
+/// <summary>A new card: load its last month.</summary>
 internal sealed class CardsHasBeenAddedDomainEventHandler : INotificationHandler<CardsHasBeenAddedEvent>
 {
     private readonly ISender _sender;
-    private readonly IClientCardsRepository _clientCardsRepository;
 
-    public CardsHasBeenAddedDomainEventHandler(ISender sender, IClientCardsRepository clientCardsRepository)
+    public CardsHasBeenAddedDomainEventHandler(ISender sender)
     {
         _sender = sender;
-        _clientCardsRepository = clientCardsRepository;
     }
 
     public async Task Handle(CardsHasBeenAddedEvent notification, CancellationToken cancellationToken)
     {
-        var clientCard = await _clientCardsRepository.GetById(notification.ClientCardId, cancellationToken);
-        if (clientCard == null)
-            return; 
-        
-        await _sender.Send(new FetchLatestTransactionsCommand(clientCard.Id),
-            cancellationToken);
+        var result = await _sender.Send(new FetchLatestTransactionsCommand(notification.ClientCardId), cancellationToken);
+        // several new cards share one token's rate limit: try again on the next outbox run
+        if (result.IsFailure && result.Error.Code == MonobankErrors.RateLimited)
+            throw new RetryLaterException(result.Error.Message);
     }
 }

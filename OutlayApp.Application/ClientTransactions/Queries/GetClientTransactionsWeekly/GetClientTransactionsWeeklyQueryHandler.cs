@@ -1,6 +1,5 @@
-using AutoMapper;
 using OutlayApp.Application.Abstractions.Messaging;
-using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactions;
+using OutlayApp.Application.Time;
 using OutlayApp.Domain.Repositories;
 using OutlayApp.Domain.Shared;
 
@@ -10,40 +9,36 @@ public class GetClientTransactionsWeeklyQueryHandler : IQueryHandler<GetClientTr
     List<ClientTransactionsWeeklyResponse>>
 {
     private readonly IClientTransactionRepository _clientTransactionRepository;
-    private readonly IMapper _mapper;
+    private readonly ITransactionEnricher _enricher;
 
     public GetClientTransactionsWeeklyQueryHandler(IClientTransactionRepository clientTransactionRepository,
-        IMapper mapper)
+        ITransactionEnricher enricher)
     {
         _clientTransactionRepository = clientTransactionRepository;
-        _mapper = mapper;
+        _enricher = enricher;
     }
 
     public async Task<Result<List<ClientTransactionsWeeklyResponse>>> Handle(GetClientTransactionsWeeklyQuery request,
         CancellationToken cancellationToken)
     {
         const int daysInWeek = 7;
-        var currDay = (int)DateTime.Now.DayOfWeek;
-        var dayStart = daysInWeek * request.SkipWeeks;
+        // the week is a Kyiv calendar week (Sunday first, as before)
+        var today = KyivTime.Now.Date;
+        var weekStart = today.AddDays(-(int)today.DayOfWeek).AddDays(-daysInWeek * request.SkipWeeks);
+        var from = KyivTime.ToUtc(weekStart);
+        var to = KyivTime.ToUtc(weekStart.AddDays(daysInWeek));
 
-        // Calculate the starting and ending dates for the 7-day period
-        var dateStart = DateTime.Now.Date.AddDays(-currDay).AddDays(-dayStart);
-        var dateEnd = dateStart.AddDays(daysInWeek);
+        var transactions = await _clientTransactionRepository.GetByPeriod(request.ClientCardId, from, to, cancellationToken);
+        var dtos = await _enricher.ToDtos(transactions, cancellationToken);
 
-        var transactions = await _clientTransactionRepository.GetByPeriod(request.ClientCardId,
-            dateStart, dateEnd, cancellationToken);
-
-        var transactionDtos = _mapper.Map<List<ClientTransactionDto>>(transactions);
-
-        var grouped = transactionDtos.GroupBy(x => x.DateOccured.DayOfWeek).Select(x =>
-                new ClientTransactionsWeeklyResponse
-                {
-                    DayOfWeek = x.Key,
-                    Amount = x.Sum(dto => dto.Amount),
-                    Transactions = x.Select(t => t).ToList()
-                }).OrderBy(x => x.DayOfWeek)
+        return dtos.GroupBy(x => KyivTime.FromUtc(x.DateOccured).DayOfWeek)
+            .Select(x => new ClientTransactionsWeeklyResponse
+            {
+                DayOfWeek = x.Key,
+                Amount = x.Sum(dto => dto.Amount),
+                Transactions = x.ToList(),
+            })
+            .OrderBy(x => x.DayOfWeek)
             .ToList();
-
-        return grouped;
     }
 }

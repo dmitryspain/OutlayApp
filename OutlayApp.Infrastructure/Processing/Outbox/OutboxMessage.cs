@@ -8,4 +8,5 @@ public sealed class OutboxMessage
     public long OccurredOnUtc { get; set; }
     public long? ProcessedOnUtc { get; set; }
     public string? Error { get; set; }
+    public int Attempts { get; set; }
 }

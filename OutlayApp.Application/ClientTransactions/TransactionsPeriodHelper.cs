@@ -1,16 +1,16 @@
+using OutlayApp.Application.Time;
+
 namespace OutlayApp.Application.ClientTransactions;
 
 public static class TransactionsPeriodHelper
 {
-    public static (DateTime, DateTime) GetMonobankTransactionsPeriod(DateTime? dateFrom, DateTime? dateTo)
-    {
-        const int maxDaysPeriod = 30;
-        var defaultDateFrom = DateTime.Now.AddDays(-maxDaysPeriod);
-        var defaultDateTo = DateTime.Now;
+    private const int DefaultDays = 30;
 
-        dateFrom ??= defaultDateFrom;
-        dateTo ??= defaultDateTo;
-        
-        return (dateFrom.Value, dateTo.Value);
+    /// <summary>The requested period in UTC; the last 30 days when a bound is missing.</summary>
+    public static (DateTime From, DateTime To) Resolve(DateTime? dateFrom, DateTime? dateTo)
+    {
+        var to = dateTo is null ? DateTime.UtcNow : KyivTime.ToUtc(dateTo.Value);
+        var from = dateFrom is null ? to.AddDays(-DefaultDays) : KyivTime.ToUtc(dateFrom.Value);
+        return (from, to);
     }
 }

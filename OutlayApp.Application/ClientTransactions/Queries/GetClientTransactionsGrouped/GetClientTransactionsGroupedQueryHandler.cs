@@ -1,7 +1,4 @@
-using AutoMapper;
-using MediatR;
 using OutlayApp.Application.Abstractions.Messaging;
-using OutlayApp.Application.LogoReferences;
 using OutlayApp.Domain.Repositories;
 using OutlayApp.Domain.Shared;
 
@@ -11,39 +8,34 @@ public class GetClientTransactionsGroupedQueryHandler : IQueryHandler<GetClientT
     List<ClientTransactionsGroupedResponse>>
 {
     private readonly IClientTransactionRepository _clientTransactionRepository;
-    private readonly IMapper _mapper;
-    private readonly ISender _sender;
+    private readonly ITransactionEnricher _enricher;
 
     public GetClientTransactionsGroupedQueryHandler(IClientTransactionRepository clientTransactionRepository,
-        IMapper mapper, ISender sender)
+        ITransactionEnricher enricher)
     {
         _clientTransactionRepository = clientTransactionRepository;
-        _mapper = mapper;
-        _sender = sender;
+        _enricher = enricher;
     }
 
     public async Task<Result<List<ClientTransactionsGroupedResponse>>> Handle(GetClientTransactionsGroupedQuery request,
         CancellationToken cancellationToken)
     {
-        var (dateFrom, dateTo) = TransactionsPeriodHelper
-            .GetMonobankTransactionsPeriod(request.DateFrom, request.DateTo);
+        var (from, to) = TransactionsPeriodHelper.Resolve(request.DateFrom, request.DateTo);
+        var transactions = await _clientTransactionRepository.GetByPeriod(request.ClientCardId, from, to, cancellationToken);
 
-        var transactions = await _clientTransactionRepository
-            .GetByPeriod(request.ClientCardId, dateFrom, dateTo, cancellationToken);
+        var groups = transactions.GroupBy(x => x.Description).ToList();
+        var logos = await _enricher.LogosFor(groups.Select(g => ITransactionEnricher.LogoName(g.Key)).Distinct().ToList(),
+            cancellationToken);
 
-        var grouped = transactions!.GroupBy(x => x.Description)
-            .Select(x => new GroupedTransaction
+        return groups
+            .Select(g => new ClientTransactionsGroupedResponse
             {
-                Name = x.Key,
-                Amount = x.Sum(s => s.Amount),
-                Mcc = x.FirstOrDefault()!.Mcc
+                Name = g.Key,
+                Amount = g.Sum(s => s.Amount),
+                Category = _enricher.CategoryOf(g.First().Mcc),
+                Icon = logos.GetValueOrDefault(ITransactionEnricher.LogoName(g.Key), string.Empty),
             })
-            .OrderBy(x => x.Amount);
-
-        // var freqLogosCommand = new FetchMostFrequencyIconsCommand(grouped.Select(x => x.Name));
-        // await _sender.Send(freqLogosCommand, cancellationToken);
-
-        var result = _mapper.Map<List<ClientTransactionsGroupedResponse>>(grouped);
-        return result;
+            .OrderBy(x => x.Amount)
+            .ToList();
     }
 }

@@ -14,18 +14,12 @@ public class InvalidReferenceRepository : IInvalidReferenceRepository
         _context = context;
     }
 
-    public Task AddAsync(InvalidReference logoReference, CancellationToken cancellationToken = default)
-    {
-        return _context.AddAsync(logoReference, cancellationToken).AsTask();
-    }
+    public Task AddAsync(InvalidReference reference, CancellationToken cancellationToken = default) =>
+        _context.AddAsync(reference, cancellationToken).AsTask();
 
-    public Task<InvalidReference> GetById(Guid id, CancellationToken cancellationToken = default)
-    {
-        return _context.InvalidReferences.FirstOrDefaultAsync(x => x.Id == id, cancellationToken)!;
-    }
+    public Task<InvalidReference?> GetById(Guid id, CancellationToken cancellationToken = default) =>
+        _context.InvalidReferences.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
-    public Task<bool> ContainsAsync(string name, CancellationToken cancellationToken = default)
-    {
-        return _context.InvalidReferences.Select(x => x.Name).ContainsAsync(name, cancellationToken);
-    }
+    public Task<bool> ContainsAsync(string name, CancellationToken cancellationToken = default) =>
+        _context.InvalidReferences.AnyAsync(x => x.Name == name, cancellationToken);
 }

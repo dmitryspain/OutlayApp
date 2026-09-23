@@ -17,10 +17,29 @@ namespace OutlayApp.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.3")
+                .HasAnnotation("ProductVersion", "8.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FriendlyName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Xml")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DataProtectionKeys");
+                });
 
             modelBuilder.Entity("OutlayApp.Domain.ClientCards.ClientCard", b =>
                 {
@@ -29,19 +48,27 @@ namespace OutlayApp.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("Balance")
-                        .HasColumnType("numeric");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<Guid>("ClientId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("CreditLimit")
-                        .HasColumnType("integer");
+                    b.Property<decimal>("CreditLimit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<int>("CurrencyCode")
                         .HasColumnType("integer");
 
                     b.Property<string>("ExternalCardId")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Iban")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MaskedPan")
                         .HasColumnType("text");
 
                     b.Property<string>("Type")
@@ -51,6 +78,8 @@ namespace OutlayApp.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ClientId");
+
+                    b.HasIndex("ExternalCardId");
 
                     b.ToTable("ClientCards");
                 });
@@ -67,11 +96,21 @@ namespace OutlayApp.Infrastructure.Migrations
                     b.Property<decimal>("BalanceAfter")
                         .HasColumnType("numeric");
 
+                    b.Property<decimal>("Cashback")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
                     b.Property<Guid>("ClientCardId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Comment")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CounterName")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("DateOccured")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -80,12 +119,15 @@ namespace OutlayApp.Infrastructure.Migrations
                     b.Property<string>("ExternalId")
                         .HasColumnType("text");
 
+                    b.Property<bool>("Hold")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("Mcc")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ClientCardId");
+                    b.HasIndex("ClientCardId", "DateOccured");
 
                     b.HasIndex("ClientCardId", "ExternalId")
                         .IsUnique()
@@ -100,18 +142,28 @@ namespace OutlayApp.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("EncryptedToken")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LegacyPlainToken")
+                        .HasColumnType("text")
+                        .HasColumnName("PersonalToken");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("PersonalToken")
-                        .IsRequired()
+                    b.Property<string>("TokenHash")
                         .HasColumnType("text");
 
                     b.Property<string>("WebhookUrl")
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasFilter("\"TokenHash\" IS NOT NULL");
 
                     b.ToTable("Clients");
                 });
@@ -123,7 +175,7 @@ namespace OutlayApp.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("LastTimeRetrieved")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -141,7 +193,7 @@ namespace OutlayApp.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("LastTimeRetrieved")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -156,11 +208,88 @@ namespace OutlayApp.Infrastructure.Migrations
                     b.ToTable("LogoReferences");
                 });
 
+            modelBuilder.Entity("OutlayApp.Domain.Sessions.ClientSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ClientId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClientId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.ToTable("ClientSessions");
+                });
+
+            modelBuilder.Entity("OutlayApp.Infrastructure.BackgroundJobs.BackfillJob", b =>
+                {
+                    b.Property<Guid>("CardId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer");
+
+                    b.Property<long>("CursorTo")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("text");
+
+                    b.Property<long>("Floor")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Imported")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("LockedUntilUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("NextRunAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("Start")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("CardId");
+
+                    b.HasIndex("State", "NextRunAtUtc");
+
+                    b.ToTable("BackfillJobs");
+                });
+
             modelBuilder.Entity("OutlayApp.Infrastructure.Processing.Outbox.OutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Content")
                         .IsRequired()
@@ -198,6 +327,15 @@ namespace OutlayApp.Infrastructure.Migrations
                     b.HasOne("OutlayApp.Domain.ClientCards.ClientCard", null)
                         .WithMany("Transactions")
                         .HasForeignKey("ClientCardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("OutlayApp.Domain.Sessions.ClientSession", b =>
+                {
+                    b.HasOne("OutlayApp.Domain.Clients.Client", null)
+                        .WithMany()
+                        .HasForeignKey("ClientId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

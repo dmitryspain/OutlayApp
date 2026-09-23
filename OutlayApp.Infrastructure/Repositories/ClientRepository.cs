@@ -14,29 +14,15 @@ public class ClientRepository : IClientRepository
         _context = context;
     }
 
-    public Task AddAsync(Client client, CancellationToken cancellationToken = default)
-    {
-        return _context.AddAsync(client, cancellationToken).AsTask();
-    }
+    public Task AddAsync(Client client, CancellationToken cancellationToken = default) =>
+        _context.AddAsync(client, cancellationToken).AsTask();
 
-    public void Update(Client client, CancellationToken cancellationToken = default)
-    {
-        _context.Update(client);
-    }
+    public Task<Client?> GetByTokenHash(string tokenHash, CancellationToken cancellationToken = default) =>
+        _context.Clients.Include(x => x.Cards).FirstOrDefaultAsync(x => x.TokenHash == tokenHash, cancellationToken);
 
-    public Task<Client> GetByPersonalToken(string token, CancellationToken cancellationToken = default)
-    {
-        return _context.Clients.Include(x => x.Cards)
-            .FirstOrDefaultAsync(x => x.PersonalToken == token, cancellationToken)!;
-    }
+    public Task<Client?> GetById(Guid clientId, CancellationToken cancellationToken = default) =>
+        _context.Clients.FirstOrDefaultAsync(x => x.Id == clientId, cancellationToken);
 
-    public Task<Client> GetById(Guid clientId, CancellationToken cancellationToken = default)
-    {
-        return _context.Clients.FirstOrDefaultAsync(x => x.Id == clientId, cancellationToken)!;
-    }
-
-    public Task<Client> GetByIdWithCards(Guid clientId, CancellationToken cancellationToken = default)
-    {
-        return _context.Clients.Include(x => x.Cards).FirstOrDefaultAsync(x => x.Id == clientId, cancellationToken)!;
-    }
+    public Task<Client?> GetByIdWithCards(Guid clientId, CancellationToken cancellationToken = default) =>
+        _context.Clients.Include(x => x.Cards).FirstOrDefaultAsync(x => x.Id == clientId, cancellationToken);
 }

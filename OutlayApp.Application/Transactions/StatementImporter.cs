@@ -1,78 +1,94 @@
-using System.Net;
-using System.Net.Http.Json;
-using OutlayApp.Application.Configuration.Extensions;
-using OutlayApp.Application.Configuration.Monobank;
 using OutlayApp.Domain.ClientCards;
 using OutlayApp.Domain.ClientTransactions;
 using OutlayApp.Domain.Repositories;
 
 namespace OutlayApp.Application.Transactions;
 
+/// <param name="Added">new rows (not yet saved)</param>
+/// <param name="Updated">stored rows that took over a bank id or got settled</param>
+/// <param name="RemovedDuplicates">stored copies of one bank item, dropped</param>
+public sealed record ImportResult(List<ClientTransaction> Added, int Updated, int RemovedDuplicates);
+
 /// <summary>
-/// Reads statement pages from Monobank and stores the items a card does not have yet.
-/// Webhooks, polling and the history backfill all go through here, so an item is never stored twice.
+/// Stores bank statement items on a card. Webhooks, polling and backfills all go through here, so:
+///  - an item already stored (same bank id) is never added again — but a hold that settled is updated;
+///  - a row stored before bank ids were kept is matched by content and takes over the id; extra copies
+///    of the same item left by the old importer are removed.
+/// Nothing is saved here: the caller commits.
 /// </summary>
 public sealed class StatementImporter
 {
-    private readonly HttpClient _httpClient;
-    private readonly IClientTransactionRepository _transactionRepository;
+    private readonly IClientTransactionRepository _transactions;
 
-    public StatementImporter(IHttpClientFactory factory, IClientTransactionRepository transactionRepository)
+    public StatementImporter(IClientTransactionRepository transactions)
     {
-        _httpClient = factory.CreateClient(MonobankConstants.HttpClient);
-        _transactionRepository = transactionRepository;
+        _transactions = transactions;
     }
 
-    /// <summary>One statement page, newest first. Throws <see cref="MonobankRateLimitException"/> on 429.</summary>
-    public async Task<List<MonobankTransaction>> FetchPage(string token, string externalCardId, long from, long to,
-        CancellationToken cancellationToken)
-    {
-        using var request = new HttpRequestMessage(HttpMethod.Get, $"/personal/statement/{externalCardId}/{from}/{to}");
-        request.Headers.Add(MonobankConstants.TokenHeader, token);
-
-        using var response = await _httpClient.SendAsync(request, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.TooManyRequests)
-            throw new MonobankRateLimitException();
-        response.EnsureSuccessStatusCode();
-
-        return await response.Content.ReadFromJsonAsync<List<MonobankTransaction>>(cancellationToken: cancellationToken)
-               ?? new List<MonobankTransaction>();
-    }
-
-    /// <summary>Adds the items the card does not have yet (not saved — the caller commits). Returns what was added.</summary>
-    public async Task<List<ClientTransaction>> AddNew(ClientCard card, IReadOnlyCollection<MonobankTransaction> items,
+    public async Task<ImportResult> Import(ClientCard card, IReadOnlyCollection<MonobankTransaction> items,
         CancellationToken cancellationToken)
     {
         var added = new List<ClientTransaction>();
         if (items.Count == 0)
-            return added;
+            return new ImportResult(added, 0, 0);
 
-        var from = items.Min(x => x.LocalTime).AddSeconds(-1);
-        var to = items.Max(x => x.LocalTime).AddSeconds(1);
-        var stored = await _transactionRepository.GetByPeriod(card.Id, from, to, cancellationToken);
+        var from = items.Min(x => x.TimeUtc).AddSeconds(-1);
+        var to = items.Max(x => x.TimeUtc).AddSeconds(1);
+        var stored = await _transactions.GetByPeriod(card.Id, from, to, cancellationToken);
 
-        var knownIds = stored.Where(x => x.ExternalId is not null).Select(x => x.ExternalId!).ToHashSet();
-        // rows stored before ExternalId existed are matched by their content
-        var knownLegacy = stored.Where(x => x.ExternalId is null)
-            .Select(x => (x.DateOccured, x.Amount, x.Description))
-            .ToHashSet();
+        var byId = stored.Where(x => x.ExternalId is not null).ToDictionary(x => x.ExternalId!);
+        var legacy = stored.Where(x => x.ExternalId is null)
+            .GroupBy(Key)
+            .ToDictionary(g => g.Key, g => new Queue<ClientTransaction>(g));
+        var claimedKeys = new HashSet<(DateTime, decimal, string)>();
+        var updated = 0;
 
         foreach (var item in items)
         {
-            var amount = item.Amount.ToDecimal();
-            if (knownIds.Contains(item.Id) || knownLegacy.Contains((item.LocalTime, amount, item.Description)))
+            var details = item.ToDetails();
+            if (byId.TryGetValue(item.Id, out var existing))
+            {
+                if (existing.Hold && !item.Hold)
+                {
+                    existing.Settle();
+                    updated++;
+                }
                 continue;
+            }
 
-            var result = card.AddTransaction(item.Description, amount, item.Balance.ToDecimal(), item.LocalTime,
-                item.Mcc, item.Id);
+            var key = Key(details);
+            if (legacy.TryGetValue(key, out var queue) && queue.Count > 0)
+            {
+                var row = queue.Dequeue();
+                row.AdoptBankItem(details);
+                byId[item.Id] = row;
+                claimedKeys.Add(key);
+                updated++;
+                continue;
+            }
+
+            var result = card.AddTransaction(details);
             if (result.IsFailure)
                 continue;
-
-            knownIds.Add(item.Id);
-            added.Add(result.Value);
+            byId[item.Id] = result.Value!;
+            added.Add(result.Value!);
         }
 
-        await _transactionRepository.AddRange(added, cancellationToken);
-        return added;
+        // the bank listed this content N times and we matched N rows: whatever is left over is a copy
+        var removed = 0;
+        foreach (var key in claimedKeys)
+        {
+            foreach (var copy in legacy[key])
+            {
+                _transactions.Remove(copy);
+                removed++;
+            }
+        }
+
+        await _transactions.AddRange(added, cancellationToken);
+        return new ImportResult(added, updated, removed);
     }
+
+    private static (DateTime, decimal, string) Key(ClientTransaction t) => (t.DateOccured, t.Amount, t.Description);
+    private static (DateTime, decimal, string) Key(TransactionDetails d) => (d.DateOccuredUtc, d.Amount, d.Description);
 }

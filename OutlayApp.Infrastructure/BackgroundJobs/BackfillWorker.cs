@@ -1,41 +1,46 @@
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OutlayApp.Application.Backfill;
 using OutlayApp.Application.Configuration.Monobank;
-using OutlayApp.Application.Transactions;
-using OutlayApp.Domain.Shared;
+using OutlayApp.Application.Live;
+using OutlayApp.Application.Monobank;
+using OutlayApp.Infrastructure.Database;
 
 namespace OutlayApp.Infrastructure.BackgroundJobs;
 
 /// <summary>
-/// Walks a card's history backwards one statement window at a time. Monobank allows one statement
-/// request per minute per token, so windows are spaced out and a 429 simply waits and retries.
+/// Works through <see cref="BackfillJob"/>s one statement window at a time. A job is claimed with a row lock
+/// (FOR UPDATE SKIP LOCKED), so several instances can run this; the next window of a job waits the bank's
+/// one-request-per-minute interval; progress is saved after every window, so a restart just continues.
 /// </summary>
 public sealed class BackfillWorker : BackgroundService
 {
-    private static readonly TimeSpan RequestGap = TimeSpan.FromSeconds(61);
-    private const int MaxRateLimitRetries = 5;
+    private static readonly TimeSpan Poll = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan Lease = TimeSpan.FromMinutes(2);
+    private const int MaxAttempts = 5;
 
-    private readonly BackfillQueue _queue;
     private readonly IServiceScopeFactory _scopes;
+    private readonly ILiveEvents _live;
     private readonly ILogger<BackfillWorker> _logger;
 
-    public BackfillWorker(BackfillQueue queue, IServiceScopeFactory scopes, ILogger<BackfillWorker> logger)
+    public BackfillWorker(IServiceScopeFactory scopes, ILiveEvents live, ILogger<BackfillWorker> logger)
     {
-        _queue = queue;
         _scopes = scopes;
+        _live = live;
         _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await foreach (var (cardId, months) in _queue.Jobs.ReadAllAsync(stoppingToken))
+        while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                await Run(cardId, months, stoppingToken);
+                if (!await RunOne(stoppingToken))
+                    await Task.Delay(Poll, stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -43,65 +48,82 @@ public sealed class BackfillWorker : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "History backfill failed for card {CardId}", cardId);
-                var last = _queue.Get(cardId);
-                _queue.Report(last with { State = BackfillStates.Failed, EtaSeconds = null, Error = ex.Message });
+                _logger.LogError(ex, "Backfill worker iteration failed");
+                await Task.Delay(Poll, stoppingToken);
             }
         }
     }
 
-    private async Task Run(Guid cardId, int months, CancellationToken ct)
-    {
-        var to = await Send(new GetHistoryStartQuery(cardId), ct);
-        var start = to;
-        var floor = DateTimeOffset.Now.AddMonths(-months).ToUnixTimeSeconds();
-        var imported = 0;
-        var retries = 0;
-
-        while (to > floor)
-        {
-            _queue.Report(Status(cardId, BackfillStates.Running, start, to, floor, imported));
-
-            ImportWindowResult window;
-            try
-            {
-                window = await Send(new ImportStatementWindowCommand(cardId, to, floor), ct);
-            }
-            catch (MonobankRateLimitException) when (++retries <= MaxRateLimitRetries)
-            {
-                await Task.Delay(RequestGap, ct);
-                continue;
-            }
-
-            retries = 0;
-            imported += window.Added;
-            to = window.NextTo;
-            if (window.Finished)
-                break;
-            await Task.Delay(RequestGap, ct);
-        }
-
-        _queue.Report(Status(cardId, BackfillStates.Done, start, Math.Min(to, floor), floor, imported));
-        _logger.LogInformation("History backfill for card {CardId} done: {Count} transactions", cardId, imported);
-    }
-
-    /// <summary>Each step gets its own scope, so the DbContext does not grow over a long run.</summary>
-    private async Task<T> Send<T>(IRequest<Result<T>> request, CancellationToken ct)
+    /// <summary>Claims one due job and imports one window of it. False when nothing was due.</summary>
+    private async Task<bool> RunOne(CancellationToken ct)
     {
         await using var scope = _scopes.CreateAsyncScope();
-        var result = await scope.ServiceProvider.GetRequiredService<ISender>().Send(request, ct);
-        if (result.IsFailure)
-            throw new InvalidOperationException(result.Error.Message);
-        return result.Value!;
+        var db = scope.ServiceProvider.GetRequiredService<OutlayContext>();
+
+        var now = DateTime.UtcNow;
+        var claimed = await db.BackfillJobs
+            .FromSqlInterpolated($"""
+                UPDATE "BackfillJobs" SET "LockedUntilUtc" = {now + Lease}
+                WHERE "CardId" = (
+                    SELECT "CardId" FROM "BackfillJobs"
+                    WHERE "State" = {BackfillStates.Running} AND "NextRunAtUtc" <= {now}
+                      AND ("LockedUntilUtc" IS NULL OR "LockedUntilUtc" < {now})
+                    ORDER BY "NextRunAtUtc"
+                    LIMIT 1
+                    FOR UPDATE SKIP LOCKED)
+                RETURNING *
+                """)
+            .AsNoTracking()
+            .ToListAsync(ct);
+        if (claimed.Count == 0)
+            return false;
+
+        var job = await db.BackfillJobs.FirstAsync(x => x.CardId == claimed[0].CardId, ct);
+        try
+        {
+            var result = await scope.ServiceProvider.GetRequiredService<ISender>()
+                .Send(new ImportStatementWindowCommand(job.CardId, job.CursorTo, job.Floor), ct);
+            if (result.IsFailure)
+            {
+                Fail(job, result.Error.Message);
+            }
+            else
+            {
+                job.Imported += result.Value!.Added;
+                job.CursorTo = result.Value.NextTo;
+                job.Attempts = 0;
+                job.Error = null;
+                if (result.Value.Finished)
+                    job.State = BackfillStates.Done;
+                job.NextRunAtUtc = DateTime.UtcNow + MonobankConstants.RequestInterval;
+            }
+        }
+        catch (MonobankRateLimitException ex)
+        {
+            // somebody else used the token's minute (a refresh, another job): just come back later
+            job.NextRunAtUtc = DateTime.UtcNow + ex.RetryAfter;
+        }
+        catch (MonobankException ex)
+        {
+            if (++job.Attempts >= MaxAttempts)
+                Fail(job, ex.Message);
+            else
+                job.NextRunAtUtc = DateTime.UtcNow + MonobankConstants.RequestInterval * job.Attempts;
+        }
+
+        job.LockedUntilUtc = null;
+        job.UpdatedAtUtc = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        await _live.Publish(job.CardId, new LiveEvent(LiveEventTypes.Backfill, BackfillQueue.ToStatus(job)));
+        if (job.State == BackfillStates.Done)
+            _logger.LogInformation("History job for card {CardId} done: {Count} transactions", job.CardId, job.Imported);
+        return true;
     }
 
-    private static BackfillStatus Status(Guid cardId, string state, long start, long to, long floor, int imported)
+    private void Fail(BackfillJob job, string error)
     {
-        var total = Math.Max(1, start - floor);
-        var progress = state == BackfillStates.Done ? 1 : Math.Clamp((double)(start - to) / total, 0, 1);
-        var windowsLeft = (int)Math.Ceiling((double)Math.Max(0, to - floor) / MonobankConstants.MaxStatementSeconds);
-        return new BackfillStatus(cardId, state, progress, imported,
-            DateTimeOffset.FromUnixTimeSeconds(to + 1).LocalDateTime,
-            state == BackfillStates.Done ? null : windowsLeft * (int)RequestGap.TotalSeconds);
+        job.State = BackfillStates.Failed;
+        job.Error = error;
+        _logger.LogWarning("History job for card {CardId} failed: {Error}", job.CardId, error);
     }
 }

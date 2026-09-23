@@ -1,16 +1,18 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Npgsql.Internal.TypeHandlers.FullTextSearchHandlers;
-using OutlayApp.Application.ChooseClientCards.Commands;
+using OutlayApp.API.Auth;
 using OutlayApp.Application.ClientCards.Command;
-using OutlayApp.Application.Clients.Commands;
+using OutlayApp.Application.Clients.Queries.GetClientCards;
 using OutlayApp.Application.Clients.Queries.GetClientInfo;
 using OutlayApp.Application.Webhooks;
 
 namespace OutlayApp.API.Clients;
 
+/// <summary>The signed-in client: profile, cards, balances, webhook. Nothing here takes the Monobank token.</summary>
 [ApiController]
-[Route("api/[controller]")]
+[Authorize]
+[Route("api/clients")]
 public class ClientsController : ControllerBase
 {
     private readonly ISender _sender;
@@ -20,48 +22,40 @@ public class ClientsController : ControllerBase
         _sender = sender;
     }
 
-    [HttpPost("register")]
-    public async Task<IActionResult> RegisterClient(string clientToken, CancellationToken cancellationToken)
+    [HttpGet("me")]
+    public async Task<IActionResult> GetMe(CancellationToken cancellationToken)
     {
-        var command = new RegisterClientCommand(clientToken);
-        var result = await _sender.Send(command, cancellationToken);
+        var result = await _sender.Send(new GetClientQuery(User.ClientId()), cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : NotFound(result.Error);
+    }
+
+    [HttpGet("cards")]
+    public async Task<IActionResult> GetCards(CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new GetClientCardsQuery(User.ClientId()), cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
     }
-    [HttpPost("cards")]
-    public async Task<IActionResult> GetCards(string clientToken,CancellationToken cancellationToken)
+
+    /// <summary>Re-reads balances (and any new account) from the bank.</summary>
+    [HttpPost("balance/refresh")]
+    public async Task<IActionResult> RefreshBalance(CancellationToken cancellationToken)
     {
-        var command = new ChooseClientCardsCommand(clientToken);
-        var result = await _sender.Send(command,cancellationToken);
-        return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
-    }
-     
-    [HttpGet("personal-info")]
-    public async Task<IActionResult> GetClientInfo(Guid clientId, CancellationToken cancellationToken)
-    {
-        var command = new GetClientQuery(clientId);
-        var result = await _sender.Send(command, cancellationToken);
-        return result.IsSuccess ? Ok(result) : BadRequest(result.Error);
-    }
-    [HttpGet("update-balance")]
-    public async Task<IActionResult> UpdateBalance(string clientToken, CancellationToken cancellationToken)
-    {
-        var command = new UpdateBalanceCommand(clientToken);
-        var result = await _sender.Send(command, cancellationToken);
-        return result.IsSuccess ? Ok(result) : BadRequest(result.Error);
+        var result = await _sender.Send(new UpdateBalanceCommand(User.ClientId()), cancellationToken);
+        return result.IsSuccess ? NoContent() : BadRequest(result.Error);
     }
 
     /// <summary>Asks Monobank to push this client's transactions to us.</summary>
     [HttpPost("webhook")]
-    public async Task<IActionResult> RegisterWebhook(string clientToken, CancellationToken cancellationToken)
+    public async Task<IActionResult> RegisterWebhook(CancellationToken cancellationToken)
     {
-        var result = await _sender.Send(new RegisterWebhookCommand(clientToken), cancellationToken);
+        var result = await _sender.Send(new RegisterWebhookCommand(User.ClientId()), cancellationToken);
         return result.IsSuccess ? Ok(new { url = result.Value }) : BadRequest(result.Error);
     }
 
     [HttpGet("webhook")]
-    public async Task<IActionResult> GetWebhookStatus(string clientToken, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetWebhookStatus(CancellationToken cancellationToken)
     {
-        var result = await _sender.Send(new GetWebhookStatusQuery(clientToken), cancellationToken);
+        var result = await _sender.Send(new GetWebhookStatusQuery(User.ClientId()), cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
     }
 }

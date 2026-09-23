@@ -20,7 +20,6 @@ public static class DependencyInjection
                                 .WithIntervalInSeconds(10)
                                 .RepeatForever()));
 
-            configure.UseMicrosoftDependencyInjectionJobFactory();
         });
 
         services.AddQuartzHostedService();

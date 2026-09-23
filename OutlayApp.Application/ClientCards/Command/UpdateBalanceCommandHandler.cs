@@ -1,51 +1,55 @@
-﻿using Microsoft.Extensions.Options;
 using OutlayApp.Application.Abstractions.Messaging;
-using OutlayApp.Application.Clients.Commands;
-using OutlayApp.Application.Configuration.Monobank;
+using OutlayApp.Application.Monobank;
+using OutlayApp.Application.Security;
 using OutlayApp.Domain.Repositories;
 using OutlayApp.Domain.Shared;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http.Json;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace OutlayApp.Application.ClientCards.Command
+namespace OutlayApp.Application.ClientCards.Command;
+
+public class UpdateBalanceCommandHandler : ICommandHandler<UpdateBalanceCommand>
 {
-    public class UpdateBalanceCommandHandler : ICommandHandler<UpdateBalanceCommand>
+    private readonly IClientRepository _clientRepository;
+    private readonly IMonobankClient _monobank;
+    private readonly ITokenProtector _protector;
+    private readonly IUnitOfWork _unitOfWork;
+
+    public UpdateBalanceCommandHandler(IClientRepository clientRepository, IMonobankClient monobank,
+        ITokenProtector protector, IUnitOfWork unitOfWork)
     {
-        private readonly IClientRepository _clientRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        _clientRepository = clientRepository;
+        _monobank = monobank;
+        _protector = protector;
+        _unitOfWork = unitOfWork;
+    }
 
-        private readonly IOptions<MonobankSettings> _monobankSettings;
+    public async Task<Result> Handle(UpdateBalanceCommand request, CancellationToken cancellationToken)
+    {
+        var client = await _clientRepository.GetByIdWithCards(request.ClientId, cancellationToken);
+        if (client?.EncryptedToken is null)
+            return Result.Failure(new Error("Client.NotFound", "Клієнта не знайдено."));
 
-
-        public UpdateBalanceCommandHandler(IClientRepository clientRepository,
-            IUnitOfWork unitOfWork, IOptions<MonobankSettings> monobankSettings)
+        MonobankClientInfo info;
+        try
         {
-            _clientRepository = clientRepository;
-            _unitOfWork = unitOfWork;
-            _monobankSettings = monobankSettings;
+            info = await _monobank.GetClientInfo(_protector.Unprotect(client.EncryptedToken), cancellationToken);
         }
-        public async Task<Result> Handle(UpdateBalanceCommand request, CancellationToken cancellationToken)
+        catch (MonobankException ex)
         {
-            var exist = await _clientRepository.GetByPersonalToken(request.ClientToken, cancellationToken);
-
-            using var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(_monobankSettings.Value.BaseUrl);
-            httpClient.DefaultRequestHeaders.Add(MonobankConstants.TokenHeader, request.ClientToken);
-
-            var result = await httpClient.GetAsync("/personal/client-info", cancellationToken);
-            var clientInfo = await result.Content.ReadFromJsonAsync<ClientInfo>(cancellationToken: cancellationToken);
-
-            foreach (var item in exist.Cards)
-            {
-                var newBalance = clientInfo.Accounts.Where(x => x.Id == item.ExternalCardId).Select(x => x.Balance).FirstOrDefault();
-                item.UpdateBalance(newBalance);
-                await _unitOfWork.SaveChangesAsync();
-            }
-            return Result.Success();
+            return Result.Failure(MonobankErrors.From(ex));
         }
+
+        foreach (var account in info.Accounts)
+        {
+            var card = client.Cards.FirstOrDefault(c => c.ExternalCardId == account.Id);
+            if (card is null)
+                client.AddCard(account.Id, account.Type, account.Balance / 100m, account.CreditLimit / 100m,
+                    account.CurrencyCode, account.MaskedPan.FirstOrDefault(), account.Iban);
+            else
+                card.UpdateAccount(account.Balance / 100m, account.CreditLimit / 100m, account.Type,
+                    account.MaskedPan.FirstOrDefault(), account.Iban);
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return Result.Success();
     }
 }

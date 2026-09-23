@@ -1,30 +1,30 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using OutlayApp.Application.Configuration.Database;
-using OutlayApp.Infrastructure.Database.InMemoryDb;
+using OutlayApp.Application.Security;
+using OutlayApp.Infrastructure.Security;
 
 namespace OutlayApp.Infrastructure.Database;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInMemoryDbContext(this IServiceCollection services)
+    /// <summary>Postgres (all dates UTC, <c>timestamptz</c>), token encryption keys stored in it.</summary>
+    public static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<OutlayInMemoryContext>(
-            options => options.UseInMemoryDatabase(databaseName: "OutlayInMemoryContext"), ServiceLifetime.Singleton);
-        
-        services.AddDbContextFactory<OutlayInMemoryContext>();
-        
-        var context = services.BuildServiceProvider().GetRequiredService<OutlayInMemoryContext>();
-        MccInfoInitializer.AddMccs(context, CancellationToken.None).Wait();
-        return services;
-    }
+        var connectionString = configuration[DbConnectionConstants.ConnectionString]
+                               ?? throw new InvalidOperationException($"{DbConnectionConstants.ConnectionString} is not set");
 
-    public static IServiceCollection AddDbContext(this IServiceCollection services, IConfiguration configuration)
-    {
-        services.AddDbContext<OutlayContext>(options =>
-            options.UseNpgsql(configuration[DbConnectionConstants.ConnectionString]));
-        AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+        services.AddSingleton(_ => NpgsqlDataSource.Create(connectionString));
+        services.AddDbContext<OutlayContext>((sp, options) => options.UseNpgsql(sp.GetRequiredService<NpgsqlDataSource>()));
+
+        services.AddDataProtection()
+            .SetApplicationName("Outlay")
+            .PersistKeysToDbContext<OutlayContext>();
+        services.AddSingleton<ITokenProtector, TokenProtector>();
+        services.AddHostedService<LegacyTokenMigrator>();
         return services;
     }
 }

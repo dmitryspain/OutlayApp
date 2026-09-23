@@ -21,7 +21,7 @@ public class GetWebhookStatusQueryHandler : IQueryHandler<GetWebhookStatusQuery,
     {
         // read from our own records: /personal/client-info is rate-limited to once a minute
         var url = WebhookUrl.Build(_settings);
-        var client = await _clientRepository.GetByPersonalToken(request.ClientToken, cancellationToken);
+        var client = await _clientRepository.GetById(request.ClientId, cancellationToken);
         var enabled = url is not null && client?.WebhookUrl == url;
         return Result.Success(new WebhookStatus(url is not null, enabled));
     }

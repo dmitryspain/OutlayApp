@@ -1,42 +1,62 @@
-using System.Collections.Concurrent;
-using System.Threading.Channels;
+using Microsoft.EntityFrameworkCore;
 using OutlayApp.Application.Backfill;
+using OutlayApp.Application.Configuration.Monobank;
 using OutlayApp.Application.Live;
+using OutlayApp.Infrastructure.Database;
 
 namespace OutlayApp.Infrastructure.BackgroundJobs;
 
 public sealed class BackfillQueue : IBackfillQueue
 {
-    private const int MaxMonths = 24;
-    private readonly Channel<(Guid CardId, int Months)> _jobs = Channel.CreateUnbounded<(Guid, int)>();
-    private readonly ConcurrentDictionary<Guid, BackfillStatus> _status = new();
-    private readonly ILiveEvents _liveEvents;
+    private readonly OutlayContext _db;
+    private readonly ILiveEvents _live;
 
-    public BackfillQueue(ILiveEvents liveEvents)
+    public BackfillQueue(OutlayContext db, ILiveEvents live)
     {
-        _liveEvents = liveEvents;
+        _db = db;
+        _live = live;
     }
 
-    internal ChannelReader<(Guid CardId, int Months)> Jobs => _jobs.Reader;
-
-    public BackfillStatus Enqueue(Guid cardId, int months)
+    public async Task<BackfillStatus> Enqueue(Guid cardId, long to, long floor, CancellationToken cancellationToken)
     {
-        var current = Get(cardId);
-        if (current.State == BackfillStates.Running)
-            return current;
+        var job = await _db.BackfillJobs.FirstOrDefaultAsync(x => x.CardId == cardId, cancellationToken);
+        if (job?.State == BackfillStates.Running)
+            return ToStatus(job);
 
-        var status = new BackfillStatus(cardId, BackfillStates.Running, 0, 0, null, null);
-        Report(status);
-        _jobs.Writer.TryWrite((cardId, Math.Clamp(months, 1, MaxMonths)));
+        var now = DateTime.UtcNow;
+        job ??= _db.BackfillJobs.Add(new BackfillJob { CardId = cardId }).Entity;
+        job.State = to > floor ? BackfillStates.Running : BackfillStates.Done;
+        job.Start = to;
+        job.CursorTo = to;
+        job.Floor = floor;
+        job.Imported = 0;
+        job.Attempts = 0;
+        job.Error = null;
+        job.NextRunAtUtc = now;
+        job.LockedUntilUtc = null;
+        job.UpdatedAtUtc = now;
+        await _db.SaveChangesAsync(cancellationToken);
+
+        var status = ToStatus(job);
+        await _live.Publish(cardId, new LiveEvent(LiveEventTypes.Backfill, status));
         return status;
     }
 
-    public BackfillStatus Get(Guid cardId) =>
-        _status.TryGetValue(cardId, out var status) ? status : BackfillStatus.Idle(cardId);
-
-    internal void Report(BackfillStatus status)
+    public async Task<BackfillStatus> Get(Guid cardId, CancellationToken cancellationToken)
     {
-        _status[status.CardId] = status;
-        _liveEvents.Publish(status.CardId, new LiveEvent(LiveEventTypes.Backfill, status));
+        var job = await _db.BackfillJobs.AsNoTracking().FirstOrDefaultAsync(x => x.CardId == cardId, cancellationToken);
+        return job is null ? BackfillStatus.Idle(cardId) : ToStatus(job);
+    }
+
+    public static BackfillStatus ToStatus(BackfillJob job)
+    {
+        var done = job.State == BackfillStates.Done;
+        var total = Math.Max(1, job.Start - job.Floor);
+        var progress = done ? 1 : Math.Clamp((double)(job.Start - job.CursorTo) / total, 0, 1);
+        var windowsLeft = (int)Math.Ceiling((double)Math.Max(0, job.CursorTo - job.Floor) / MonobankConstants.MaxStatementSeconds);
+        return new BackfillStatus(job.CardId, job.State, progress, job.Imported,
+            DateTimeOffset.FromUnixTimeSeconds(Math.Max(job.CursorTo, job.Floor) + 1).UtcDateTime,
+            job.State == BackfillStates.Running ? windowsLeft * (int)MonobankConstants.RequestInterval.TotalSeconds : null,
+            job.Error);
     }
 }

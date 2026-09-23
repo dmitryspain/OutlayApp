@@ -20,6 +20,9 @@ public class UnitOfWork : IUnitOfWork
     {
         await _domainEventsDispatcher.DispatchEventsAsync();
         await _context.SaveChangesAsync(cancellationToken);
+        // the events are in the outbox now; without this, the next save in this scope would queue them again
+        foreach (var entry in _context.ChangeTracker.Entries<Domain.Primitives.Entity>())
+            entry.Entity.ClearDomainEvents();
     }
 
     public IDbTransaction BeginTransaction()

@@ -36,15 +36,14 @@ public class ProcessStatementItemCommandHandler : ICommandHandler<ProcessStateme
             return Result.Success();
         }
 
-        var added = await _importer.AddNew(card, new[] { request.Item }, cancellationToken);
-        // balances are stored in minor units, as /personal/client-info sends them
-        card.UpdateBalance(request.Item.Balance);
+        var result = await _importer.Import(card, new[] { request.Item }, cancellationToken);
+        card.UpdateBalance(request.Item.ToDetails().BalanceAfter);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        foreach (var t in added)
+        foreach (var t in result.Added)
         {
-            _liveEvents.Publish(card.Id, new LiveEvent(LiveEventTypes.Transaction,
-                new LiveTransaction(t.Description, t.Amount, t.DateOccured, t.Mcc, t.BalanceAfter)));
+            await _liveEvents.Publish(card.Id, new LiveEvent(LiveEventTypes.Transaction,
+                new LiveTransaction(t.Description, t.Amount, t.DateOccured, t.Mcc, t.BalanceAfter, t.CounterName, t.Hold)));
         }
 
         return Result.Success();
