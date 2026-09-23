@@ -39,6 +39,14 @@ public class ClientTransactionRepository : IClientTransactionRepository
             .FirstOrDefaultAsync(cancellationToken)!;
     }
 
+    public Task<ClientTransaction?> GetEarliest(Guid clientCardId, CancellationToken cancellationToken = default)
+    {
+        return _context.ClientTransactions.Where(x => x.ClientCardId == clientCardId)
+            .OrderBy(x => x.DateOccured)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public Task AddRange(IEnumerable<ClientTransaction> transactions, CancellationToken cancellationToken = default)
     {
         return _context.AddRangeAsync(transactions, cancellationToken);

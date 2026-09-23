@@ -5,6 +5,7 @@ using OutlayApp.Application.ChooseClientCards.Commands;
 using OutlayApp.Application.ClientCards.Command;
 using OutlayApp.Application.Clients.Commands;
 using OutlayApp.Application.Clients.Queries.GetClientInfo;
+using OutlayApp.Application.Webhooks;
 
 namespace OutlayApp.API.Clients;
 
@@ -47,5 +48,20 @@ public class ClientsController : ControllerBase
         var command = new UpdateBalanceCommand(clientToken);
         var result = await _sender.Send(command, cancellationToken);
         return result.IsSuccess ? Ok(result) : BadRequest(result.Error);
+    }
+
+    /// <summary>Asks Monobank to push this client's transactions to us.</summary>
+    [HttpPost("webhook")]
+    public async Task<IActionResult> RegisterWebhook(string clientToken, CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new RegisterWebhookCommand(clientToken), cancellationToken);
+        return result.IsSuccess ? Ok(new { url = result.Value }) : BadRequest(result.Error);
+    }
+
+    [HttpGet("webhook")]
+    public async Task<IActionResult> GetWebhookStatus(string clientToken, CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new GetWebhookStatusQuery(clientToken), cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
     }
 }

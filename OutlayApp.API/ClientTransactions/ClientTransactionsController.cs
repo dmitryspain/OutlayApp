@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using OutlayApp.Application.Backfill;
 using OutlayApp.Application.ClientTransactions.Commands;
 using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactions;
 using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactionsByDescription;
@@ -13,10 +14,25 @@ namespace OutlayApp.API.ClientTransactions;
 public class ClientTransactionsController : ControllerBase
 {
     private readonly ISender _mediator;
+    private readonly IBackfillQueue _backfill;
 
-    public ClientTransactionsController(ISender mediator)
+    public ClientTransactionsController(ISender mediator, IBackfillQueue backfill)
     {
         _mediator = mediator;
+        _backfill = backfill;
+    }
+
+    /// <summary>Starts loading older history from Monobank in the background (about a minute per month).</summary>
+    [HttpPost("backfill")]
+    public IActionResult StartBackfill(Guid cardId, int months = 6)
+    {
+        return Accepted(_backfill.Enqueue(cardId, months));
+    }
+
+    [HttpGet("backfill")]
+    public IActionResult GetBackfill(Guid cardId)
+    {
+        return Ok(_backfill.Get(cardId));
     }
     
     [HttpGet("latest")]

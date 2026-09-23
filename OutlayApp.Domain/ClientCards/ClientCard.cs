@@ -33,9 +33,9 @@ public class ClientCard : Entity, IAggregateRoot
     }
     
     public Result<ClientTransaction> AddTransaction(string description,
-        decimal amount, decimal balanceAfter, DateTime dateOccured, int mcc)
+        decimal amount, decimal balanceAfter, DateTime dateOccured, int mcc, string? externalId = null)
     {
-        var transaction = ClientTransaction.Create(Id, description, amount, balanceAfter, dateOccured, mcc);
+        var transaction = ClientTransaction.Create(Id, description, amount, balanceAfter, dateOccured, mcc, externalId);
        _transactions.Add(transaction);
         return transaction;
     }

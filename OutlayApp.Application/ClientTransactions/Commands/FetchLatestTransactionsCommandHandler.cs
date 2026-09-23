@@ -1,9 +1,6 @@
-using System.Net.Http.Json;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using OutlayApp.Application.Abstractions.Messaging;
-using OutlayApp.Application.Configuration.Extensions;
 using OutlayApp.Application.Configuration.Monobank;
 using OutlayApp.Application.LogoReferences;
 using OutlayApp.Application.Transactions;
@@ -19,7 +16,8 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
 
     private const int MaxDaysPeriod = 30;
     private const int FirstLogosFetchCount = 10;
-    private readonly HttpClient _httpClient;
+    private const int OverlapDays = 1;
+    private readonly StatementImporter _importer;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ISender _sender;
     private readonly ILogger<FetchLatestTransactionsCommandHandler> _logger;
@@ -29,7 +27,7 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
 
     #endregion
 
-    public FetchLatestTransactionsCommandHandler(IHttpClientFactory factory, IClientCardsRepository cardsRepository,
+    public FetchLatestTransactionsCommandHandler(StatementImporter importer, IClientCardsRepository cardsRepository,
         IClientTransactionRepository transactionRepository, IClientRepository clientRepository, IUnitOfWork unitOfWork,
         ISender sender, ILogger<FetchLatestTransactionsCommandHandler> logger)
     {
@@ -39,7 +37,7 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
         _cardsRepository = cardsRepository;
         _transactionRepository = transactionRepository;
         _clientRepository = clientRepository;
-        _httpClient = factory.CreateClient(MonobankConstants.HttpClient);
+        _importer = importer;
     }
 
     public async Task<Result> Handle(FetchLatestTransactionsCommand request, CancellationToken cancellationToken)
@@ -51,44 +49,21 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
                 return Result.Failure(new Error("ClientCard.NotFound",
                     $"No client card with External Id {request.CardId}"));
 
-            long unixTimeFrom;
+            var now = DateTimeOffset.Now;
+            var earliestAllowed = now.AddDays(-MaxDaysPeriod);
             var latest = await _transactionRepository.GetLatest(clientCard.Id, cancellationToken);
-            if (latest is null)
-                unixTimeFrom = DateTimeOffset.Now.AddDays(-MaxDaysPeriod).ToUnixTimeSeconds();
-            else
-                unixTimeFrom = DateTimeOffset.Now - latest.DateOccured
-                               < TimeSpan.FromDays(MaxDaysPeriod)
-                    ? ((DateTimeOffset)latest!.DateOccured).ToUnixTimeSeconds() + 1
-                    : DateTimeOffset.Now.AddDays(-MaxDaysPeriod).ToUnixTimeSeconds();
+            // re-read the last day as well: anything a webhook missed gets picked up, duplicates are skipped
+            var from = latest is null
+                ? earliestAllowed
+                : new DateTimeOffset(latest.DateOccured).AddDays(-OverlapDays);
+            if (from < earliestAllowed)
+                from = earliestAllowed;
 
-            var unixTimeTo = DateTimeOffset.Now.ToUnixTimeSeconds();
-            var url = BuildUrl(clientCard.ExternalCardId, unixTimeFrom, unixTimeTo);
             var client = await _clientRepository.GetById(clientCard.ClientId, cancellationToken);
-            _httpClient.DefaultRequestHeaders.Add(MonobankConstants.TokenHeader, client.PersonalToken);
+            var monobankTransactions = await _importer.FetchPage(client.PersonalToken, clientCard.ExternalCardId,
+                from.ToUnixTimeSeconds(), now.ToUnixTimeSeconds(), cancellationToken);
 
-            var result = await _httpClient.GetAsync(url, cancellationToken);
-            var mes = result.Content.ReadAsStringAsync(cancellationToken);
-            var monobankTransactions = (await result.Content.ReadFromJsonAsync<IEnumerable<MonobankTransaction>>(
-                cancellationToken: cancellationToken) ?? Array.Empty<MonobankTransaction>()).ToList();
-
-            foreach (var transaction in monobankTransactions)
-            {
-                var localTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Kiev");
-                var localTime = TimeZoneInfo.ConvertTime(DateTimeOffset.FromUnixTimeSeconds(transaction.Time).DateTime, TimeZoneInfo.Utc, localTimeZone);
-
-                var transactionResult = clientCard.AddTransaction(
-                    transaction.Description,
-                    transaction.Amount.ToDecimal(),
-                    transaction.Balance.ToDecimal(),
-                    localTime,
-                    transaction.Mcc);
-
-                if (transactionResult.IsFailure)
-                {
-                    return Result.Failure(
-                        new Error("ClientTransaction.CreationFailed", "Client transaction creation is failed"));
-                }
-            }
+            var added = await _importer.AddNew(clientCard, monobankTransactions, cancellationToken);
 
             var mostFrequencyTransactions = monobankTransactions
                 .Where(x => x.Mcc != MccsConstants.MoneyTransfer) 
@@ -100,8 +75,12 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
             var freqLogosCommand = new FetchMostFrequencyIconsCommand(mostFrequencyTransactions);
             
             await _sender.Send(freqLogosCommand, cancellationToken);
-            await _transactionRepository.AddRange(clientCard.Transactions, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Fetched {Count} new transactions for card {CardId}", added.Count, clientCard.Id);
+        }
+        catch (MonobankRateLimitException ex)
+        {
+            _logger.LogWarning(ex, "Statement request throttled by Monobank");
         }
         catch (System.Text.Json.JsonException jsonEx)
         {
@@ -117,15 +96,5 @@ public class FetchLatestTransactionsCommandHandler : ICommandHandler<FetchLatest
         }
         
         return Result.Success();
-    }
-
-    private static string BuildUrl(string externalCardId, long? dateFrom = null, long? dateTo = null)
-    {
-        if (dateFrom is not null && dateTo is not null)
-            return $"/personal/statement/{externalCardId}/{dateFrom}/{dateTo}";
-
-        return dateFrom is not null
-            ? $"/personal/statement/{externalCardId}/{dateFrom}/{DateTimeOffset.Now.ToUnixTimeSeconds()}"
-            : $"/personal/statement/{externalCardId}/{DateTimeOffset.Now.ToUnixTimeSeconds()}";
     }
 }

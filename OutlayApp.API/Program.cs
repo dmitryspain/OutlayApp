@@ -7,6 +7,7 @@ using OutlayApp.Infrastructure.BackgroundJobs;
 using OutlayApp.Infrastructure.Database;
 using OutlayApp.Infrastructure.Processing;
 using OutlayApp.Infrastructure.KeyVault;
+using OutlayApp.Infrastructure.Live;
 using OutlayApp.Infrastructure.Mapper;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,6 +27,7 @@ builder.Services.AddControllers().Services
     .AddInMemoryDbContext()
     .AddDbContext(builder.Configuration)
     .AddBackgroundJobs()
+    .AddLiveUpdates()
     .AddAutoMapper()
     .AddMemoryCache();
 

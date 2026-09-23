@@ -11,6 +11,8 @@ public class ClientTransaction : Entity, IAggregateRoot
     public decimal Amount { get; private set; }
     public decimal BalanceAfter { get; private set; }
     public int Mcc { get; private set; }
+    /// <summary>Monobank's own statement item id. Null for rows imported before it was stored.</summary>
+    public string? ExternalId { get; private set; }
 
     private ClientTransaction()
         : base(Guid.NewGuid())
@@ -18,7 +20,7 @@ public class ClientTransaction : Entity, IAggregateRoot
     }
 
     private ClientTransaction(Guid id, Guid clientCardId, string description, decimal amount,
-        decimal balanceAfter, DateTime dateOccured, int mcc)
+        decimal balanceAfter, DateTime dateOccured, int mcc, string? externalId)
         : base(id)
     {
         ClientCardId = clientCardId;
@@ -27,11 +29,12 @@ public class ClientTransaction : Entity, IAggregateRoot
         BalanceAfter = balanceAfter;
         DateOccured = dateOccured;
         Mcc = mcc;
+        ExternalId = externalId;
     }
 
     public static ClientTransaction Create(Guid cardId, string description, decimal amount,
-        decimal balanceAfter, DateTime dateOccured, int mcc)
+        decimal balanceAfter, DateTime dateOccured, int mcc, string? externalId = null)
     {
-        return new ClientTransaction(Guid.NewGuid(), cardId, description, amount, balanceAfter, dateOccured, mcc);
+        return new ClientTransaction(Guid.NewGuid(), cardId, description, amount, balanceAfter, dateOccured, mcc, externalId);
     }
 }

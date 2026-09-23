@@ -9,6 +9,8 @@ public sealed class Client : Entity, IAggregateRoot
 {
     public string Name { get; private set; } 
     public string PersonalToken { get; private set; }
+    /// <summary>The URL Monobank pushes new transactions to, once registered.</summary>
+    public string? WebhookUrl { get; private set; }
 
     private readonly List<ClientCard> _cards = new();
     public IReadOnlyCollection<ClientCard> Cards => _cards;
@@ -36,6 +38,11 @@ public sealed class Client : Entity, IAggregateRoot
         _cards.Add(card);
         AddDomainEvent(new CardsHasBeenAddedEvent(card.Id));
         return card;
+    }
+
+    public void SetWebhook(string url)
+    {
+        WebhookUrl = url;
     }
 
     public static Client Create(string name, string personalToken)
