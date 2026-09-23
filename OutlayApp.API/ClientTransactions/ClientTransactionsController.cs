@@ -46,10 +46,10 @@ public class ClientTransactionsController : ControllerBase
     }
 
     [HttpGet("by-description")]
-    public async Task<IActionResult> GetTransactionsByDescription(Guid clientCardId, string description,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> GetTransactionsByDescription(Guid clientCardId, string description, 
+        DateTime? dateFrom, DateTime? dateTo, CancellationToken cancellationToken)
     {
-        var command = new GetClientTransactionsByDescriptionQuery(clientCardId, description);
+        var command = new GetClientTransactionsByDescriptionQuery(clientCardId, description, dateFrom, dateTo);
         var result = await _mediator.Send(command, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
     }

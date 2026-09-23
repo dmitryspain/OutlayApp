@@ -8,6 +8,7 @@ public interface IClientTransactionRepository : IRepository<ClientTransaction>
         CancellationToken cancellationToken = default);
     
     Task<List<ClientTransaction>> GetByDescription(Guid clientCardId, string description,
+        DateTime? dateFrom, DateTime? dateTo,
         CancellationToken cancellationToken = default);
     
     Task<ClientTransaction> GetLatest(Guid clientCardId, CancellationToken cancellationToken = default);

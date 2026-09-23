@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using OutlayApp.Application.ClientTransactions;
 using OutlayApp.Application.ClientTransactions.Queries.GetClientTransactionsGrouped;
 using OutlayApp.Domain.Repositories;
@@ -8,12 +9,12 @@ namespace OutlayApp.Infrastructure.Mapper.TypeConverters;
 
 public class ClientTransactionConverter : ITypeConverter<GroupedTransaction, ClientTransactionsGroupedResponse>
 {
-    private readonly OutlayInMemoryContext _inMemoryContext;
+    private readonly IDbContextFactory<OutlayInMemoryContext> _factory;
     private readonly ILogoReferenceRepository _logoReferenceRepository;
 
-    public ClientTransactionConverter(OutlayInMemoryContext inMemoryContext, ILogoReferenceRepository logoReferenceRepository)
+    public ClientTransactionConverter(IDbContextFactory<OutlayInMemoryContext> factory, ILogoReferenceRepository logoReferenceRepository)
     {
-        _inMemoryContext = inMemoryContext;
+        _factory = factory;
         _logoReferenceRepository = logoReferenceRepository;
     }
 
@@ -21,9 +22,14 @@ public class ClientTransactionConverter : ITypeConverter<GroupedTransaction, Cli
         ClientTransactionsGroupedResponse destination,
         ResolutionContext context)
     {
-        var cat = _inMemoryContext.MccInfos.FirstOrDefault(x => x.Mcc == source.Mcc)!.ShortDescription;
+        var dbContext = _factory.CreateDbContext();
+        
+        var cat = dbContext.MccInfos.FirstOrDefault(x => x.Mcc == source.Mcc)!.ShortDescription;
+        
         var name = source.Name.Replace("Скасування. ", string.Empty);
+        
         var icon = _logoReferenceRepository.GetByName(name, CancellationToken.None).Result?.Url ?? string.Empty;
+        
         return new ClientTransactionsGroupedResponse
         {
             Name = source.Name,

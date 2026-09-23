@@ -12,15 +12,18 @@ public static class DependencyInjection
     {
         services.AddDbContext<OutlayInMemoryContext>(
             options => options.UseInMemoryDatabase(databaseName: "OutlayInMemoryContext"), ServiceLifetime.Singleton);
+        
+        services.AddDbContextFactory<OutlayInMemoryContext>();
+        
         var context = services.BuildServiceProvider().GetRequiredService<OutlayInMemoryContext>();
         MccInfoInitializer.AddMccs(context, CancellationToken.None).Wait();
         return services;
     }
-    
+
     public static IServiceCollection AddDbContext(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<OutlayContext>(
-            options => options.UseNpgsql(configuration[DbConnectionConstants.ConnectionString]));
+        services.AddDbContext<OutlayContext>(options =>
+            options.UseNpgsql(configuration[DbConnectionConstants.ConnectionString]));
         AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
         return services;
     }

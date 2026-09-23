@@ -24,9 +24,9 @@ public class ClientTransactionRepository : IClientTransactionRepository
     }
 
     public Task<List<ClientTransaction>> GetByDescription(Guid clientCardId, string description,
-        CancellationToken cancellationToken = default)
+        DateTime? dateFrom, DateTime? dateTo, CancellationToken cancellationToken = default)
     {
-        return _context.ClientTransactions.Where(x => x.Description == description && x.ClientCardId == clientCardId)
+        return _context.ClientTransactions.Where(x => x.Description == description && x.ClientCardId == clientCardId && x.DateOccured > dateFrom && x.DateOccured < dateTo)
             .OrderByDescending(x => x.DateOccured)
             .ToListAsync(cancellationToken);
     }

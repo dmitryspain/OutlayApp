@@ -22,7 +22,7 @@ public class GetClientTransactionsByDescriptionQueryHandler : IQueryHandler<GetC
         CancellationToken cancellationToken)
     {
         var transactions = await _clientTransactionRepository
-            .GetByDescription(request.ClientCardId, request.Description, cancellationToken);
+            .GetByDescription(request.ClientCardId, request.Description, request.DateFrom, request.DateTo, cancellationToken);
 
         var result = _mapper.Map<List<ClientTransactionByDescriptionResponse>>(transactions);
         return result;

@@ -19,6 +19,7 @@ public class OutlayContext : DbContext
     public OutlayContext(DbContextOptions<OutlayContext> options) 
         : base(options)
     {
+        //Database.EnsureDeleted();
         //Database.EnsureCreated();
     }
 
