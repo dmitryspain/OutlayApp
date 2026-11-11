@@ -1,9 +1,7 @@
-﻿FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
-WORKDIR /app
-EXPOSE 80
-EXPOSE 443
+﻿# Keep in step with <TargetFramework> in the csproj files (net8.0 -> 8.0).
+ARG DOTNET_VERSION=8.0
 
-FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS build
 WORKDIR /src
 COPY ["OutlayApp.API/OutlayApp.API.csproj", "OutlayApp.API/"]
 COPY ["OutlayApp.Application/OutlayApp.Application.csproj", "OutlayApp.Application/"]
@@ -11,13 +9,14 @@ COPY ["OutlayApp.Domain/OutlayApp.Domain.csproj", "OutlayApp.Domain/"]
 COPY ["OutlayApp.Infrastructure/OutlayApp.Infrastructure.csproj", "OutlayApp.Infrastructure/"]
 RUN dotnet restore "OutlayApp.API/OutlayApp.API.csproj"
 COPY . .
-WORKDIR "/src/OutlayApp.API"
-RUN dotnet build "OutlayApp.API.csproj" -c Release -o /app/build
+RUN dotnet publish "OutlayApp.API/OutlayApp.API.csproj" -c Release -o /app/publish --no-restore -p:UseAppHost=false
 
-FROM build AS publish
-RUN dotnet publish "OutlayApp.API.csproj" -c Release -o /app/publish
-
-FROM base AS final
+# Chiseled: no shell or package manager, so far fewer OS packages to patch.
+# "-extra" brings tzdata (KyivTime needs Europe/Kyiv) and ICU.
+FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION}-noble-chiseled-extra AS final
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=build /app/publish .
+# Non-root user shipped with the .NET images; it can't bind ports below 1024, hence 8080.
+USER $APP_UID
+EXPOSE 8080
 ENTRYPOINT ["dotnet", "OutlayApp.API.dll"]
