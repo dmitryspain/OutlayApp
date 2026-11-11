@@ -6,7 +6,7 @@ previous one, a breakdown by category, day-of-week patterns, a spending calendar
 transactions appear within seconds through the Monobank webhook.
 
 This repository is the backend, an ASP.NET Core 8 Web API. The client is
-[OutlayUI](https://github.com/ChaklunIvan/OutlayUI), an Angular 17 app that also runs on iPhone through Capacitor.
+[OutlayUI](https://github.com/dmitryspain/OutlayUI), an Angular 17 app that also runs on iPhone through Capacitor.
 
 ### What the backend does
 
