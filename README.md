@@ -86,7 +86,7 @@ iOS-застосунок — це UI з OutlayUI-latest у нативній об
   xcrun simctl keychain booted add-root-cert ~/outlay-dev.crt
   ```
   Для іншого симулятора або нового dev-сертифіката команди треба повторити.
-- **(в) Фізичний iPhone** ходить на задеплоєний API (`https://outlay-api.onrender.com/api` у
+- **(в) Фізичний iPhone** ходить на задеплоєний API (`https://outlay-api-64rz.onrender.com/api` у
   `environment.mobile.ts`, розділ «Deployment»). `localhost` Мака йому недоступний. Quick-тунель `cloudflared`
   (`*.trycloudflare.com`) для застосунку не годиться: адреса змінюється при кожному запуску, а SSE він не підтримує
   ([документація Cloudflare](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/)).
@@ -102,7 +102,7 @@ the database on **Neon** (Free, AWS Europe Central 1). A push to `master` deploy
 | What | Address | Settings |
 |---|---|---|
 | UI | `https://outlay.pages.dev` | build `npm run build`, output `dist/outlay-ui`, Node from `.node-version` |
-| API | `https://outlay-api.onrender.com` | Dockerfile `./OutlayApp.API/Dockerfile`, context `.`, health check `/api/health` |
+| API | `https://outlay-api-64rz.onrender.com` | Dockerfile `./OutlayApp.API/Dockerfile`, context `.`, health check `/api/health` |
 | Database | Neon project `outlay`, default database `neondb` | direct endpoint, compute fixed at 0.25 CU |
 
 **Configuration.** Everything that is not a secret is in git, so tests check it: `appsettings.Production.json`

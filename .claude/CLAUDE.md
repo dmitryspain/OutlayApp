@@ -8,7 +8,7 @@
 
 - шлях: `/Users/dmitryspain/RiderProjects/OutlayUI-latest` (відносно цього репо: `../OutlayUI-latest`)
 - стек: Angular 17 (standalone-компоненти, сигнали, NgRx), Karma/Jasmine
-- адреса бекенду в UI: `src/environments/environment.ts` (dev, `https://localhost:7016/api`), `environment.production.ts` (`npm run build` → Cloudflare Pages) і `environment.mobile.ts` (збірка `mobile` для iOS); обидві останні ведуть на `https://outlay-api.onrender.com/api`. Решта коду бере адресу лише через токен `API_BASE_URL` у `src/app/core/config.ts`
+- адреса бекенду в UI: `src/environments/environment.ts` (dev, `https://localhost:7016/api`), `environment.production.ts` (`npm run build` → Cloudflare Pages) і `environment.mobile.ts` (збірка `mobile` для iOS); обидві останні ведуть на `https://outlay-api-64rz.onrender.com/api`. Решта коду бере адресу лише через токен `API_BASE_URL` у `src/app/core/config.ts`
 - усі HTTP-виклики й маппінг DTO → модель: `src/app/core/api.service.ts`; моделі: `src/app/core/models.ts`
 - live-події (SSE): `src/app/core/live.service.ts` ← `GET /api/events`
 - в UI є свій `README.md` з архітектурою (FeedService, `aggregate.ts`, теми, i18n). Читай його, коли задача зачіпає фронт.
