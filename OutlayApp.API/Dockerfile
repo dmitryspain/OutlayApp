@@ -1,5 +1,5 @@
-﻿# Keep in step with <TargetFramework> in the csproj files (net8.0 -> 8.0).
-ARG DOTNET_VERSION=8.0
+﻿# Keep in step with <TargetFramework> in the csproj files (net10.0 -> 10.0).
+ARG DOTNET_VERSION=10.0
 
 FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS build
 WORKDIR /src
