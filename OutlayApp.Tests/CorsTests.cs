@@ -9,7 +9,7 @@ using Microsoft.Net.Http.Headers;
 namespace OutlayApp.Tests;
 
 /// <summary>
-/// CORS of the API in Development: Cors:Origins comes from the real appsettings files (not a copy, so a broken
+/// CORS of the API in Development and Production: Cors:Origins comes from the real appsettings files (not a copy, so a broken
 /// config fails here), registered and applied with the same calls as Program.cs. The iOS app's WebView
 /// (Capacitor) calls the API from capacitor://localhost.
 /// </summary>
@@ -17,6 +17,8 @@ public class CorsTests
 {
     private const string IosApp = "capacitor://localhost";
     private const string OtherSite = "https://example.com";
+    /// <summary>The web UI on Cloudflare Pages.</summary>
+    private const string ProductionWeb = "https://outlay.pages.dev";
 
     [Theory]
     [InlineData(IosApp)]
@@ -35,6 +37,27 @@ public class CorsTests
         // IsOriginAllowed ignores a lone "*", which CorsService treats as "any origin"
         Assert.False(policy.AllowAnyOrigin);
         Assert.False(policy.IsOriginAllowed(OtherSite));
+    }
+
+    [Theory]
+    [InlineData(IosApp)]
+    [InlineData(ProductionWeb)]
+    public async Task Production_allows_the_ios_app_and_the_deployed_ui(string origin)
+    {
+        Assert.True((await DefaultPolicy("Production")).IsOriginAllowed(origin));
+    }
+
+    [Theory]
+    [InlineData("http://localhost:4200")]
+    [InlineData("http://localhost:4300")]
+    [InlineData("https://preview.outlay.pages.dev")]
+    [InlineData(OtherSite)]
+    public async Task Production_does_not_allow_local_uis_or_other_sites(string origin)
+    {
+        var policy = await DefaultPolicy("Production");
+
+        Assert.False(policy.AllowAnyOrigin);
+        Assert.False(policy.IsOriginAllowed(origin));
     }
 
     [Fact]
@@ -83,8 +106,8 @@ public class CorsTests
     };
 
     /// <summary>The policy UseCors() resolves for every endpoint.</summary>
-    private static async Task<CorsPolicy> DefaultPolicy() =>
-        await Services().GetRequiredService<ICorsPolicyProvider>().GetPolicyAsync(new DefaultHttpContext(), null)
+    private static async Task<CorsPolicy> DefaultPolicy(string environment = "Development") =>
+        await Services(environment).GetRequiredService<ICorsPolicyProvider>().GetPolicyAsync(new DefaultHttpContext(), null)
         ?? throw new InvalidOperationException("No default CORS policy");
 
     /// <summary>
@@ -115,10 +138,10 @@ public class CorsTests
         return response;
     }
 
-    /// <summary>The CORS registration of Program.cs, fed with the Development configuration.</summary>
-    private static IServiceProvider Services()
+    /// <summary>The CORS registration of Program.cs, fed with the configuration of the given environment.</summary>
+    private static IServiceProvider Services(string environment = "Development")
     {
-        var origins = DevelopmentConfiguration().GetSection("Cors:Origins").Get<string[]>() ?? Array.Empty<string>();
+        var origins = Configuration(environment).GetSection("Cors:Origins").Get<string[]>() ?? Array.Empty<string>();
         return new ServiceCollection()
             .AddLogging()
             .AddCors(o => o.AddDefaultPolicy(p => p
@@ -128,13 +151,13 @@ public class CorsTests
             .BuildServiceProvider();
     }
 
-    /// <summary>The same files in the same order as WebApplication.CreateBuilder in Development (arrays merge by index).</summary>
-    private static IConfiguration DevelopmentConfiguration()
+    /// <summary>The same files in the same order as WebApplication.CreateBuilder in that environment (arrays merge by index).</summary>
+    private static IConfiguration Configuration(string environment)
     {
         var api = Path.Combine(RepositoryRoot(), "OutlayApp.API");
         return new ConfigurationBuilder()
             .AddJsonFile(Path.Combine(api, "appsettings.json"), optional: false)
-            .AddJsonFile(Path.Combine(api, "appsettings.Development.json"), optional: false)
+            .AddJsonFile(Path.Combine(api, $"appsettings.{environment}.json"), optional: false)
             .Build();
     }
 

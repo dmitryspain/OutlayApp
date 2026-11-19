@@ -5,7 +5,7 @@ stores them in PostgreSQL and shows where the money goes: spending and income fo
 previous one, a breakdown by category, day-of-week patterns, a spending calendar and the largest purchases. New
 transactions appear within seconds through the Monobank webhook.
 
-This repository is the backend, an ASP.NET Core 8 Web API. The client is
+This repository is the backend, an ASP.NET Core 10 Web API. The client is
 [OutlayUI](https://github.com/dmitryspain/OutlayUI), an Angular 17 app that also runs on iPhone through Capacitor.
 
 ### What the backend does
@@ -17,7 +17,8 @@ This repository is the backend, an ASP.NET Core 8 Web API. The client is
   between API instances, and the client receives it as server-sent events.
 - **Keeps data private.** Every endpoint requires a session unless it is marked `[AllowAnonymous]`, and a client
   sees only their own cards. The Monobank token is encrypted at rest with ASP.NET Data Protection. Sign-in is
-  rate-limited, CORS uses an explicit allow-list, and secrets live in user-secrets or Azure Key Vault.
+  rate-limited, CORS uses an explicit allow-list, and secrets live in user-secrets locally and in the host's
+  environment variables in production.
 - **Handles failures.** Domain events go through a transactional outbox processed by Quartz. The Monobank HTTP
   client has timeouts, a circuit breaker and retries for transient errors. It never retries a 429, because a quick
   retry only extends the bank's limit.
@@ -34,7 +35,7 @@ Clean Architecture with CQRS on MediatR:
 | `OutlayApp.API` | thin controllers, session authentication, card ownership filter, rate limiting, CORS |
 | `OutlayApp.Tests` | xUnit tests |
 
-**Stack:** .NET 8, ASP.NET Core, EF Core 8, PostgreSQL, MediatR, Autofac, Quartz.NET,
+**Stack:** .NET 10, ASP.NET Core, EF Core 10, PostgreSQL, MediatR, Autofac, Quartz.NET,
 `Microsoft.Extensions.Http.Resilience`, xUnit. The Dockerfile is a multi-stage build on a chiseled .NET runtime image
 that runs as a non-root user.
 
@@ -47,6 +48,7 @@ cd OutlayApp.API
 dotnet user-secrets set "ConnectionStrings:Database" "Host=localhost;Port=5432;Database=outlayappapi_db_1;Username=postgres;Password=postgres"
 dotnet user-secrets set "GoogleApi:SearchKey" "<key>"          # optional: merchant logos
 dotnet user-secrets set "GoogleApi:SearchEngineId" "<id>"
+dotnet tool restore                                             # dotnet-ef 10 from .config/dotnet-tools.json
 ASPNETCORE_ENVIRONMENT=Development dotnet ef database update --context OutlayContext --project ../OutlayApp.Infrastructure --startup-project .
 dotnet run --launch-profile https
 ```
@@ -84,17 +86,71 @@ iOS-застосунок — це UI з OutlayUI-latest у нативній об
   xcrun simctl keychain booted add-root-cert ~/outlay-dev.crt
   ```
   Для іншого симулятора або нового dev-сертифіката команди треба повторити.
-- **(в) Фізичному iPhone** `localhost` Мака недоступний, тож йому потрібна **стабільна** HTTPS-адреса бекенду з
-  підтримкою SSE. Quick-тунель `cloudflared` (`*.trycloudflare.com`) для цього не годиться: адреса змінюється при
-  кожному запуску, а SSE він не підтримує
-  ([документація Cloudflare](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/)). Годиться він
-  лише для вебхука Monobank і разових перевірок REST.
-- **(г) Production.** Якщо колись буде production-деплой, `capacitor://localhost` треба додати до `Cors:Origins`
-  через налаштування середовища (змінна `Cors__Origins__N`) або Key Vault (секрет `Cors--Origins--N`: Key Vault
-  не допускає `_` в іменах, а провайдер конфігурації читає `--` як `:`). `N` — наступний вільний індекс у списку,
-  починаючи з 0.
+- **(в) Фізичний iPhone** ходить на задеплоєний API (`https://outlay-api.onrender.com/api` у
+  `environment.mobile.ts`, розділ «Deployment»). `localhost` Мака йому недоступний. Quick-тунель `cloudflared`
+  (`*.trycloudflare.com`) для застосунку не годиться: адреса змінюється при кожному запуску, а SSE він не підтримує
+  ([документація Cloudflare](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/)).
+- **(г) Production.** `capacitor://localhost` уже є в `Cors:Origins` файлу `appsettings.Production.json`.
 - **(ґ) Origin — не автентифікація.** Доступ і далі дає лише Bearer-сесія (для SSE — той самий токен у
   `?access_token=`). Cookies не використовуються, тож CSRF-ризику немає.
+
+## Deployment
+
+Free tiers, no bank card: the UI on **Cloudflare Pages**, the API on **Render** (Free web service, Docker, Frankfurt),
+the database on **Neon** (Free, AWS Europe Central 1). A push to `master` deploys both apps.
+
+| What | Address | Settings |
+|---|---|---|
+| UI | `https://outlay.pages.dev` | build `npm run build`, output `dist/outlay-ui`, Node from `.node-version` |
+| API | `https://outlay-api.onrender.com` | Dockerfile `./OutlayApp.API/Dockerfile`, context `.`, health check `/api/health` |
+| Database | Neon project `outlay`, database `outlay` | direct endpoint, compute fixed at 0.25 CU |
+
+**Configuration.** Everything that is not a secret is in git, so tests check it: `appsettings.Production.json`
+(CORS for the UI and the iOS app, client IP from `CF-Connecting-IP`, the webhook's public URL) and the UI's
+`environment.production.ts` / `environment.mobile.ts`. Render holds only the variables:
+
+| Variable | Value |
+|---|---|
+| `PORT` | `8080`, the port the image listens on (the chiseled image has no shell to read Render's default) |
+| `ConnectionStrings__Database` | the app role's connection string, see below |
+| `Monobank__WebhookSecret` | a random string (`openssl rand -hex 32`); changing it means turning the webhook on again |
+| `GoogleApi__SearchKey`, `GoogleApi__SearchEngineId` | optional, merchant logos |
+
+Key Vault is used only when `KeyVault:ClientSecretId` is set, so Production starts without Azure.
+
+**Database.**
+- **Direct endpoint only, no `-pooler`.** Live events use `LISTEN`, which does not work through PgBouncer.
+- **Key-value connection string** (Npgsql does not read the `postgresql://` URI):
+  `Host=ep-….eu-central-1.aws.neon.tech;Database=outlay;Username=outlay_app;Password=…;SSL Mode=VerifyFull;Channel Binding=Require;Connection Idle Lifetime=60`.
+- **Two roles.** The owner (`neondb_owner`) applies migrations from the developer's terminal. Render gets
+  `outlay_app`, which has data rights only, no DDL. Run this as the owner after the migrations:
+  ```sql
+  CREATE ROLE outlay_app WITH LOGIN PASSWORD '<openssl rand -hex 24>';
+  GRANT CONNECT ON DATABASE outlay TO outlay_app;
+  GRANT USAGE ON SCHEMA public TO outlay_app;
+  GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO outlay_app;
+  GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO outlay_app;
+  ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO outlay_app;
+  ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO outlay_app;
+  ```
+- **Migrations go first.** Apply a new migration to Neon **before** pushing the code that needs it, because Render
+  deploys right after the push:
+  ```bash
+  read -rs "NEON_OWNER?Neon owner connection string: "; echo
+  cd OutlayApp.API && ConnectionStrings__Database="$NEON_OWNER" ASPNETCORE_ENVIRONMENT=Development \
+    dotnet ef database update --context OutlayContext --project ../OutlayApp.Infrastructure --startup-project .
+  unset NEON_OWNER
+  ```
+
+**Free-tier limits.**
+- **Render sleeps after 15 minutes without requests** and wakes in about a minute. The 750 free hours a month are
+  shared by every free service in the workspace.
+- **Neon stays awake while the API is up.** The outbox job queries the database every 10 seconds. Neon Free gives
+  100 CU-hours a month, which is about 400 hours at 0.25 CU. So there is **no keep-alive pinger**: running 24/7 needs
+  about 180 CU-hours. An open UI tab also keeps the API awake (SSE reconnects and the balance poll).
+- **The webhook survives a cold start.** Monobank waits 5 s and retries after 60 and 600 s. The first push wakes the
+  API and the retry lands on a warm one. Only after three failures does the bank turn the webhook off; in that case
+  turn it on again in Settings.
 
 ## Screenshots
 

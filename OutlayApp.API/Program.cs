@@ -2,6 +2,7 @@ using System.Threading.RateLimiting;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.OpenApi.Models;
 using OutlayApp.API.Auth;
 using OutlayApp.API.Options.DatabaseOptions;
@@ -55,6 +56,22 @@ builder.Services.AddRateLimiter(o =>
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1) }));
 });
 
+// Behind the Render proxy (and Cloudflare in front of it) the connection comes from a proxy, so the client IP
+// for the rate limit and the scheme come from forwarded headers.
+var forwardedHeaders = builder.Configuration.GetSection("ForwardedHeaders");
+builder.Services.Configure<ForwardedHeadersOptions>(o =>
+{
+    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // Render does not publish its proxy IPs and the container is reachable only through them, so every hop is trusted.
+    o.KnownProxies.Clear();
+    o.KnownIPNetworks.Clear();
+    // Configurable, so a Render variable can switch the header or the limit without a new build;
+    // without the section the defaults stay (X-Forwarded-For, 1).
+    if (forwardedHeaders["ForwardedForHeaderName"] is { Length: > 0 } headerName)
+        o.ForwardedForHeaderName = headerName;
+    o.ForwardLimit = forwardedHeaders.GetValue("ForwardLimit", o.ForwardLimit);
+});
+
 var origins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? Array.Empty<string>();
 builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
     .WithOrigins(origins)
@@ -73,6 +90,8 @@ builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory())
 
 var app = builder.Build();
 
+// First: HTTPS redirection, CORS and the rate limiter must see the client's scheme and IP.
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
 if (app.Environment.IsDevelopment())
 {
@@ -86,4 +105,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.MapControllers();
+// For the host's health check: anonymous and without the database, so it neither needs a session nor wakes Neon.
+app.MapGet("/api/health", () => Results.Ok(new { status = "ok" })).AllowAnonymous();
 app.Run();

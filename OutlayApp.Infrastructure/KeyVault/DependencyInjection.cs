@@ -7,11 +7,15 @@ namespace OutlayApp.Infrastructure.KeyVault;
 
 public static class DependencyInjection
 {
+    /// <summary>
+    /// Adds Azure Key Vault in Production, but only when its client secret is set: hosts without Azure (Render)
+    /// keep their secrets in environment variables, and an empty secret would fail the start.
+    /// </summary>
     public static ConfigurationManager AddKeyVault(this ConfigurationManager configuration, bool isProduction)
     {
-        if (!isProduction)
+        if (!isProduction || string.IsNullOrWhiteSpace(configuration[KeyVaultConstants.ClientSecretId]))
             return configuration;
-        
+
         var vaultUrl = configuration[KeyVaultConstants.Url];
         var tenantId = configuration[KeyVaultConstants.TenantId];
         var clientId = configuration[KeyVaultConstants.ClientId];

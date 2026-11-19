@@ -1,6 +1,6 @@
 # OutlayApp — бекенд Outlay
 
-Особиста аналітика витрат за картками Monobank. Цей репозиторій — **бекенд** (ASP.NET Core 8 Web API, PostgreSQL).
+Особиста аналітика витрат за картками Monobank. Цей репозиторій — **бекенд** (ASP.NET Core 10 Web API, PostgreSQL).
 
 ## Пов'язаний репозиторій: OutlayUI-latest
 
@@ -8,7 +8,7 @@
 
 - шлях: `/Users/dmitryspain/RiderProjects/OutlayUI-latest` (відносно цього репо: `../OutlayUI-latest`)
 - стек: Angular 17 (standalone-компоненти, сигнали, NgRx), Karma/Jasmine
-- адреса бекенду в UI: `src/environments/environment.ts` (веб, `https://localhost:7016/api`) і `environment.mobile.ts` (збірка `mobile` для iOS). Решта коду бере її лише через токен `API_BASE_URL` у `src/app/core/config.ts`
+- адреса бекенду в UI: `src/environments/environment.ts` (dev, `https://localhost:7016/api`), `environment.production.ts` (`npm run build` → Cloudflare Pages) і `environment.mobile.ts` (збірка `mobile` для iOS); обидві останні ведуть на `https://outlay-api.onrender.com/api`. Решта коду бере адресу лише через токен `API_BASE_URL` у `src/app/core/config.ts`
 - усі HTTP-виклики й маппінг DTO → модель: `src/app/core/api.service.ts`; моделі: `src/app/core/models.ts`
 - live-події (SSE): `src/app/core/live.service.ts` ← `GET /api/events`
 - в UI є свій `README.md` з архітектурою (FeedService, `aggregate.ts`, теми, i18n). Читай його, коли задача зачіпає фронт.
@@ -38,8 +38,8 @@
 - **Де лежить:** оболонка в `../OutlayUI-latest/ios/` (Xcode-проєкт, залежності через Swift Package Manager), конфіг у `../OutlayUI-latest/capacitor.config.ts`.
 - **Збірка для iOS:** конфігурація Angular `mobile` (`src/environments/environment.mobile.ts`) зі своєю адресою API.
 - **Підпис:** безкоштовна Personal Team власника. Профіль діє 7 днів. Push (APNs), TestFlight і App Store недоступні.
-- **Зв'язок із бекендом:** iPhone досягає бекенду на Маку через Tailscale Serve (стабільна HTTPS-адреса `*.ts.net`). Quick-тунель cloudflared для телефона не годиться: адреса змінюється при кожному запуску, а SSE він не підтримує.
-- **CORS:** WebView застосунку шле запити з origin `capacitor://localhost`. Він має бути в `Cors:Origins`, інакше WebView відкидає всі відповіді API, включно з 401 і SSE.
+- **Зв'язок із бекендом:** застосунок ходить на задеплоєний API на Render (`environment.mobile.ts`). Quick-тунель cloudflared для телефона не годиться: адреса змінюється при кожному запуску, а SSE він не підтримує.
+- **CORS:** WebView застосунку шле запити з origin `capacitor://localhost`. Він має бути в `Cors:Origins` (`appsettings.Development.json` і `appsettings.Production.json`), інакше WebView відкидає всі відповіді API, включно з 401 і SSE.
 - **Один код:** будь-яка зміна Angular-UI змінює і веб, і iOS. Платформні відмінності робимо лише через `core/platform.ts` (DI-токени) і атрибут `html[data-native]`.
 - **Згенероване:** `ios/App/App/public` і `ios/App/App/capacitor.config.json` створює `cap sync`. Їх не редагуємо й не комітимо.
 
@@ -63,7 +63,8 @@ Clean Architecture + CQRS (MediatR), DI через Autofac-модулі.
 - **Гроші:** у БД і API зберігаємо цілі одиниці валюти (`decimal`). Monobank надсилає копійки, тож при імпорті ділимо на 100.
 - **Доступ:** усі ендпоінти за замовчуванням вимагають сесію (fallback policy). Анонімний доступ лише через явний `[AllowAnonymous]`. Клієнт бачить тільки свої картки (`CardOwnershipFilter`).
 - **Monobank** дозволяє запит виписки раз на хвилину. Не додавай циклів чи ретраїв, які б'ють у банк в обхід `MonobankRateLimiter`.
-- Секрети зберігаються лише в user-secrets або Key Vault, ніколи в `appsettings*.json`.
+- Секрети зберігаються лише в user-secrets (локально) або в змінних середовища Render (прод), ніколи в `appsettings*.json`. Key Vault підключається, лише якщо задано `KeyVault:ClientSecretId`.
+- **Деплой** (README, розділ «Deployment»): UI на Cloudflare Pages, API на Render Free (Docker), БД на Neon Free (лише direct endpoint, бо `LISTEN`). Не-секрети прод-конфігурації лежать в `appsettings.Production.json`. Нову міграцію власник застосовує в Neon **до** push, бо Render деплоїть одразу після нього. Агенти з Neon не працюють.
 - Схему БД змінюємо тільки новою EF-міграцією. Старі міграції не редагуємо.
 
 ## Команди
@@ -73,7 +74,7 @@ dotnet build
 dotnet test                                                   # OutlayApp.Tests, xUnit, кілька секунд
 dotnet run --project OutlayApp.API --launch-profile https     # https://localhost:7016, Swagger у Development
 
-# нова міграція
+# нова міграція (dotnet-ef 10 — локальний інструмент: спершу dotnet tool restore)
 cd OutlayApp.API && ASPNETCORE_ENVIRONMENT=Development dotnet ef migrations add <Name> \
   --context OutlayContext --project ../OutlayApp.Infrastructure --startup-project .
 ```
