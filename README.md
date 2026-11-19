@@ -103,7 +103,7 @@ the database on **Neon** (Free, AWS Europe Central 1). A push to `master` deploy
 |---|---|---|
 | UI | `https://outlay.pages.dev` | build `npm run build`, output `dist/outlay-ui`, Node from `.node-version` |
 | API | `https://outlay-api.onrender.com` | Dockerfile `./OutlayApp.API/Dockerfile`, context `.`, health check `/api/health` |
-| Database | Neon project `outlay`, database `outlay` | direct endpoint, compute fixed at 0.25 CU |
+| Database | Neon project `outlay`, default database `neondb` | direct endpoint, compute fixed at 0.25 CU |
 
 **Configuration.** Everything that is not a secret is in git, so tests check it: `appsettings.Production.json`
 (CORS for the UI and the iOS app, client IP from `CF-Connecting-IP`, the webhook's public URL) and the UI's
@@ -121,12 +121,12 @@ Key Vault is used only when `KeyVault:ClientSecretId` is set, so Production star
 **Database.**
 - **Direct endpoint only, no `-pooler`.** Live events use `LISTEN`, which does not work through PgBouncer.
 - **Key-value connection string** (Npgsql does not read the `postgresql://` URI):
-  `Host=ep-….eu-central-1.aws.neon.tech;Database=outlay;Username=outlay_app;Password=…;SSL Mode=VerifyFull;Channel Binding=Require;Connection Idle Lifetime=60`.
-- **Two roles.** The owner (`neondb_owner`) applies migrations from the developer's terminal. Render gets
-  `outlay_app`, which has data rights only, no DDL. Run this as the owner after the migrations:
+  `Host=ep-….eu-central-1.aws.neon.tech;Database=neondb;Username=outlay_app;Password=…;SSL Mode=VerifyFull;Channel Binding=Require;Connection Idle Lifetime=60`.
+- **Two roles.** The owner (`neondb_owner`) applies migrations. Render gets `outlay_app`, which has data rights
+  only, no DDL. Run this in the Neon SQL Editor (as the owner) after the first migration:
   ```sql
   CREATE ROLE outlay_app WITH LOGIN PASSWORD '<openssl rand -hex 24>';
-  GRANT CONNECT ON DATABASE outlay TO outlay_app;
+  GRANT CONNECT ON DATABASE neondb TO outlay_app;
   GRANT USAGE ON SCHEMA public TO outlay_app;
   GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO outlay_app;
   GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO outlay_app;
@@ -134,7 +134,12 @@ Key Vault is used only when `KeyVault:ClientSecretId` is set, so Production star
   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO outlay_app;
   ```
 - **Migrations go first.** Apply a new migration to Neon **before** pushing the code that needs it, because Render
-  deploys right after the push:
+  deploys right after the push. Either paste an idempotent script into the Neon SQL Editor (no secret leaves Neon):
+  ```bash
+  cd OutlayApp.API && ASPNETCORE_ENVIRONMENT=Development dotnet ef migrations script --idempotent \
+    --context OutlayContext --project ../OutlayApp.Infrastructure --startup-project . -o /tmp/outlay-schema.sql
+  ```
+  or apply it from the terminal with the owner's connection string:
   ```bash
   read -rs "NEON_OWNER?Neon owner connection string: "; echo
   cd OutlayApp.API && ConnectionStrings__Database="$NEON_OWNER" ASPNETCORE_ENVIRONMENT=Development \
